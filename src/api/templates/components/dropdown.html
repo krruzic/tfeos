@@ -1,0 +1,26 @@
+<div class="mb-4">
+  <label for="{{ setting.name }}" class="block text-sm font-medium mb-2">
+    {{ setting.label }}
+  </label>
+  <select
+    id="{{ setting.name }}"
+    name="{{ setting.name }}"
+    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+  >
+    {% for option in setting.options %}
+    <option
+      value="{{ option }}"
+      {%
+      if
+      config.get(setting.name,
+      setting.default)=""
+      ="option"
+      %}selected{%
+      endif
+      %}
+    >
+      {{ option }}
+    </option>
+    {% endfor %}
+  </select>
+</div>

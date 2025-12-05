@@ -1,0 +1,21 @@
+<div class="mb-4">
+  <label for="{{ setting.name }}" class="block text-sm font-medium mb-2">
+    {{ setting.label }}
+    <span
+      class="text-gray-500 dark:text-gray-400"
+      id="{{ setting.name }}_value"
+    >
+      ({{ config.get(setting.name, setting.default) }})
+    </span>
+  </label>
+  <input
+    type="range"
+    id="{{ setting.name }}"
+    name="{{ setting.name }}"
+    min="{{ setting.min }}"
+    max="{{ setting.max }}"
+    value="{{ config.get(setting.name, setting.default) }}"
+    class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+    oninput="document.getElementById('{{ setting.name }}_value').textContent = '(' + this.value + ')'"
+  />
+</div>

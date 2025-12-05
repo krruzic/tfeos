@@ -1,0 +1,16 @@
+{
+    "settings": [
+        {
+            "name": "show_seconds",
+            "label": "Show Seconds",
+            "type": "checkbox",
+            "default": true
+        },
+        {
+            "name": "color",
+            "label": "Text Color",
+            "type": "text",
+            "default": "#ffffff"
+        }
+    ]
+}
