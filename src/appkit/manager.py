@@ -7,7 +7,7 @@ from .base import Application
 class ApplicationManager:
     def __init__(self, apps_dir: Path):
         self.apps_dir = apps_dir
-        self.applications: Dict[str, Application] = {}
+        self.applications: Dict[str, Any] = {}
 
     def load_applications(self) -> None:
         for app_dir in self.apps_dir.iterdir():
@@ -18,7 +18,7 @@ class ApplicationManager:
                 except Exception as e:
                     print(f"Failed to load application from {app_dir}: {e}")
 
-    def _load_application(self, app_dir: Path) -> Application:
+    def _load_application(self, app_dir: Path):
         import importlib.util
 
         module_path = app_dir / "app.py"
@@ -27,10 +27,10 @@ class ApplicationManager:
         spec.loader.exec_module(module)
         return module.App(app_dir)
 
-    def get_application(self, name: str) -> Optional[Application]:
+    def get_application(self, name: str):
         return self.applications.get(name)
 
-    def get_all_applications(self) -> List[Application]:
+    def get_all_applications(self) -> List:
         return list(self.applications.values())
 
     def update_config(self, app_name: str, config: Dict[str, Any]) -> None:

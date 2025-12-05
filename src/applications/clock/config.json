@@ -1,4 +1,4 @@
 {
-    "show_seconds": true,
-    "color": "#ffffff"
+  "show_seconds": false,
+  "color": "#ffffff"
 }
