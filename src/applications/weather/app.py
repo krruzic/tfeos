@@ -101,7 +101,6 @@ class WeatherScene(Scene):
         use_fahrenheit = (
             self.config.get("temperature_unit", "Fahrenheit") == "Fahrenheit"
         )
-        print(use_fahrenheit)
         self.weather_data.update_weather(location, use_fahrenheit)
 
     def _update_loop(self):

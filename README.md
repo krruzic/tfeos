@@ -46,3 +46,7 @@ Place apps in `applications/`. Each app needs:
 - `app.py` - Application class with scenes
 
 See `applications/clock/` for an example.
+
+## Credits
+
+- `https://github.com/gidger/rpi-led-nhl-scoreboard/` for most of the NHL scoreboard code

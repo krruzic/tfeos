@@ -117,12 +117,21 @@ class LEDMatrixOS:
         if not self.current_scene:
             return
 
-        if input_type == "force_exit":
-            if self.active_app:
-                self.logger.info("Force exit from app")
-                self.return_to_menu()
-            return
+        # Let the app handle input first
+        if self.active_app:
+            app = self.manager.get_application(self.active_app)
+            if app:
+                app_result = app.handle_input(input_type)
+                if app_result:
+                    # App wants to switch scenes
+                    scenes = app.get_scenes()
+                    new_scene = scenes.get(app_result)
+                    if new_scene:
+                        new_scene.matrix = self.matrix
+                        self.current_scene = new_scene
+                        return
 
+        # Then let the scene handle input
         result = self.current_scene.handle_input(input_type)
 
         if result == "menu":
@@ -144,16 +153,15 @@ class LEDMatrixOS:
             time.sleep(sleep_time)
 
     def handle_menu_selection(self, app_name: str):
-        app = self.manager.get_application(app_name)
+        app: Optional[Application] = self.manager.get_application(app_name)
         if app:
-            scene = app.get_active_scene()
+            app.matrix = self.matrix
+            scene = app.default_scene()
             if scene:
+                scene.matrix = self.matrix
                 self.current_scene = scene
                 self.active_app = app_name
-                self.current_framerate = app.get_framerate()
-                self.logger.info(
-                    f"Launched app: {app_name} (FPS: {self.current_framerate})"
-                )
+                self.logger.info(f"Launched app: {app_name}")
 
     def return_to_menu(self):
         self.current_scene = self.menu_scene

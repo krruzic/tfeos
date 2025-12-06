@@ -1,9 +1,36 @@
-from typing import Tuple
+from typing import Optional, Tuple
+
+from PIL import Image, ImageDraw, ImageFont
 
 try:
     from rgbmatrix import graphics
 except ImportError:
     from RGBMatrixEmulator import graphics
+
+
+def clear_image(image: Image.Image, draw: ImageDraw.ImageDraw):
+    """Clear an image to black"""
+    draw.rectangle([(0, 0), image.size], fill=(0, 0, 0))
+
+
+def crop_image(image: Image.Image) -> Image.Image:
+    """Crop transparent pixels from image"""
+    if image.mode != "RGBA":
+        return image
+
+    bbox = image.getbbox()
+    if bbox:
+        return image.crop(bbox)
+    return image
+
+
+def set_image_on_canvas(canvas, image: Image.Image):
+    """Set a PIL image on the LED matrix canvas"""
+    image_rgb = image.convert("RGB")
+    for y in range(min(image.height, 32)):
+        for x in range(min(image.width, 64)):
+            r, g, b = image_rgb.getpixel((x, y))
+            canvas.SetPixel(x, y, r, g, b)
 
 
 class Color:

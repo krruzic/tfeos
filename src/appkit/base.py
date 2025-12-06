@@ -7,6 +7,9 @@ from .config import Config
 
 
 class Scene(ABC):
+    def __init__(self):
+        self.matrix = None
+
     @abstractmethod
     def render(self, canvas) -> None:
         pass
@@ -23,6 +26,7 @@ class Application(ABC):
         self.metadata = self._load_metadata()
         self.dsl = self._load_dsl()
         self.config = self._load_config()
+        self.matrix = None
 
     def get_framerate(self) -> int:
         """Return desired framerate for this app. Default is 30 FPS."""
@@ -58,6 +62,10 @@ class Application(ABC):
         self.config = Config(config_data)
         with open(self.app_dir / "config.json", "w") as f:
             json.dump(config_data, f, indent=2)
+
+    def handle_input(self, input_type: str) -> Optional[str]:
+        """Handle input at app level. Return scene name to switch to, or None"""
+        return None
 
     @abstractmethod
     def on_config_changed(self, config: Config):
