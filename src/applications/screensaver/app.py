@@ -1,5 +1,6 @@
 import math
 import random
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -170,6 +171,69 @@ class PlasmaScene(Scene):
         return None
 
 
+class ConwayLifeScene(Scene):
+    def __init__(self):
+        self.grid = [[random.choice([0, 1]) for _ in range(64)] for _ in range(32)]
+        self.generation = 0
+        self.last_update = time.time()
+
+    def render(self, canvas) -> None:
+        canvas.Clear()
+
+        # Draw current generation
+        for y in range(32):
+            for x in range(64):
+                if self.grid[y][x]:
+                    canvas.SetPixel(x, y, 0, 255, 0)
+
+        # Update every 0.2 seconds
+        if time.time() - self.last_update > 0.2:
+            self._next_generation()
+            self.last_update = time.time()
+            self.generation += 1
+
+            # Reset if stagnant (every 200 generations)
+            if self.generation > 200:
+                self.grid = [
+                    [random.choice([0, 1]) for _ in range(64)] for _ in range(32)
+                ]
+                self.generation = 0
+
+    def _next_generation(self):
+        new_grid = [[0 for _ in range(64)] for _ in range(32)]
+
+        for y in range(32):
+            for x in range(64):
+                neighbors = self._count_neighbors(x, y)
+
+                if self.grid[y][x]:
+                    # Cell is alive
+                    if neighbors in [2, 3]:
+                        new_grid[y][x] = 1
+                else:
+                    # Cell is dead
+                    if neighbors == 3:
+                        new_grid[y][x] = 1
+
+        self.grid = new_grid
+
+    def _count_neighbors(self, x, y):
+        count = 0
+        for dy in [-1, 0, 1]:
+            for dx in [-1, 0, 1]:
+                if dx == 0 and dy == 0:
+                    continue
+                nx = (x + dx) % 64
+                ny = (y + dy) % 32
+                count += self.grid[ny][nx]
+        return count
+
+    def handle_input(self, input_type: str) -> Optional[str]:
+        if input_type == "cancel":
+            return "menu"
+        return None
+
+
 class ScreensaverManager(Scene):
     def __init__(self):
         self.scenes = [
@@ -177,6 +241,7 @@ class ScreensaverManager(Scene):
             MatrixRainScene(),
             StarfieldScene(),
             PlasmaScene(),
+            ConwayLifeScene(),
         ]
         self.current_index = 0
 
