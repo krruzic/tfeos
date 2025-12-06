@@ -6,7 +6,7 @@ from typing import Optional
 
 from appkit.base import Application, Scene
 from appkit.config import Config
-from appkit.graphics_helpers import Color
+from appkit.graphics_helpers import Color, Font, draw_text
 
 
 class SnakeScene(Scene):
@@ -15,6 +15,8 @@ class SnakeScene(Scene):
         self.config = config
         self.app_dir = app_dir
         self.reset_game()
+        font_path = app_dir / "resources" / "4x6.bdf"
+        self.font = Font(str(font_path))
 
     def reset_game(self):
         self.snake = deque([(32, 16), (31, 16), (30, 16)])
@@ -39,6 +41,17 @@ class SnakeScene(Scene):
         for y in range(32):
             for x in range(64):
                 canvas.SetPixel(x, y, 101, 67, 33)
+
+        # Draw score
+        score = len(self.snake) - 3
+        if score > 999:
+            draw_text(canvas, self.font, 64 - 20, 5, Color(255, 255, 255), str(score))
+        elif score > 99:
+            draw_text(canvas, self.font, 64 - 15, 5, Color(255, 255, 255), str(score))
+        elif score > 9:
+            draw_text(canvas, self.font, 64 - 10, 5, Color(255, 255, 255), str(score))
+        else:
+            draw_text(canvas, self.font, 64 - 5, 5, Color(255, 255, 255), str(score))
 
         # Draw snake (green)
         for segment in self.snake:
