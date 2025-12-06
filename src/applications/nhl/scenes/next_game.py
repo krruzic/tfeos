@@ -107,7 +107,7 @@ class NHLNextGameScene(Scene):
                     (38, 11), "IPR", font=self.FONTS["med"], fill=self.COLOURS["white"]
                 )
             else:
-                time_str = game["start_datetime_local"].strftime("%I:%M")
+                time_str = game["start_datetime_local"].strftime("%H:%M")
                 self._draw_time(time_str, 11)
         else:
             # Draw date

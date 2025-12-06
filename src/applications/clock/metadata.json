@@ -1,7 +1,7 @@
 {
     "name": "clock",
     "version": "1.0.0",
-    "icon": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAZElEQVR4nJ1SSQoAMQhrpP//sj0UguNWHE9V0yQEoaprUjuOAPAd6XaEWlAyYQOgsmdXUqGdMbaSUjYlvZkoMlZIYmXRt9UvP1QmZX1DaNQuxa+UniI2RjwOoTkNB6Ky307P+wD470UV1xyHzAAAAABJRU5ErkJggg==",
+    "icon": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAT0lEQVR4nGNgIBEwYgr9//8fIc2IRQGKUmTVWEWwG0xYClMI0yoIgwmfE0mwEbedJNvAQozNyIGLUwPhGMDvEspCiaAl+CKbYNKgLPERAwDkkETYdWJ+hAAAAABJRU5ErkJggg==",
     "description": "A simple clock display",
     "author": "System"
 }
