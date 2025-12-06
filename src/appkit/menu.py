@@ -1,9 +1,12 @@
 import base64
+import logging
 from io import BytesIO
 from typing import List, Optional
 
 from .base import Scene
 from .graphics_helpers import Color
+
+logger = logging.getLogger("tfeos.menu")
 
 
 class AppMenuItem:
@@ -32,7 +35,7 @@ class AppMenuScene(Scene):
     def position_on_page(self) -> tuple:
         """Returns (row, col) of selected icon on current page"""
         pos = self.selected_index % 6
-        return (pos // 2, pos % 2)
+        return (pos // 3, pos % 3)
 
     def render(self, canvas) -> None:
         canvas.Clear()
@@ -42,8 +45,8 @@ class AppMenuScene(Scene):
         page_apps = self.apps[start_idx:end_idx]
 
         for idx, app in enumerate(page_apps):
-            row = idx // 2
-            col = idx % 2
+            row = idx // 3
+            col = idx % 3
 
             x = col * (self.icon_size + self.gap)
             y = row * (self.icon_size + self.gap)
@@ -124,8 +127,8 @@ class AppMenuScene(Scene):
         row, col = self.position_on_page
 
         if input_type == "down":
-            if row < 2:
-                new_index = self.selected_index + 2
+            if row < 1:
+                new_index = self.selected_index + 3
                 if new_index < len(self.apps):
                     self.selected_index = new_index
             else:
@@ -135,31 +138,31 @@ class AppMenuScene(Scene):
 
         elif input_type == "up":
             if row > 0:
-                self.selected_index = max(0, self.selected_index - 2)
+                self.selected_index = max(0, self.selected_index - 3)
             else:
                 if self.current_page > 0:
                     prev_page_start = (self.current_page - 1) * 6
-                    self.selected_index = min(prev_page_start + 4, len(self.apps) - 1)
+                    self.selected_index = min(prev_page_start + 3, len(self.apps) - 1)
 
         elif input_type == "right":
-            if col == 0:
+            if col < 2:
                 new_index = self.selected_index + 1
                 page_end = min((self.current_page + 1) * 6, len(self.apps))
                 if new_index < page_end:
                     self.selected_index = new_index
             else:
                 page_start = self.current_page * 6
-                target = page_start + (row * 2)
+                target = page_start + (row * 3)
                 if target < len(self.apps):
                     self.selected_index = target
 
         elif input_type == "left":
-            if col == 1:
+            if col > 0:
                 self.selected_index -= 1
             else:
                 page_start = self.current_page * 6
                 page_end = min((self.current_page + 1) * 6, len(self.apps))
-                target = min(page_start + (row * 2) + 1, page_end - 1)
+                target = min(page_start + (row * 3) + 2, page_end - 1)
                 self.selected_index = target
 
         elif input_type == "accept":

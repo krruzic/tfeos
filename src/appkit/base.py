@@ -24,6 +24,10 @@ class Application(ABC):
         self.dsl = self._load_dsl()
         self.config = self._load_config()
 
+    def get_framerate(self) -> int:
+        """Return desired framerate for this app. Default is 30 FPS."""
+        return 30
+
     def _load_metadata(self) -> Dict[str, Any]:
         with open(self.app_dir / "metadata.json") as f:
             return json.load(f)
@@ -50,19 +54,29 @@ class Application(ABC):
                     config[setting["name"]] = setting.get("default")
         return config
 
-    def save_config(self, config_data: Dict[str, Any]) -> None:
+    def save_config(self, config_data: Dict[str, Any]):
         self.config = Config(config_data)
         with open(self.app_dir / "config.json", "w") as f:
             json.dump(config_data, f, indent=2)
 
     @abstractmethod
+    def on_config_changed(self, config: Config):
+        """Notify on config change"""
+        pass
+
+    @abstractmethod
     def get_scenes(self) -> Dict[str, Scene]:
         pass
 
-    def get_active_scene(self) -> Optional[Scene]:
-        scenes = self.get_scenes()
-        active_scene_name = self.config.get("scene")
-        return scenes.get(active_scene_name) if active_scene_name else None
+    @abstractmethod
+    def default_scene(self) -> Scene:
+        """Return default scene for this application, shown at startup"""
+        pass
+
+    @abstractmethod
+    def get_active_scene(self) -> Scene:
+        """Return active scene for this application"""
+        pass
 
     def get_icon_data(self) -> Optional[bytes]:
         """Get decoded icon bytes from base64"""

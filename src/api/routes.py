@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import Annotated, Any, Dict, List
 
@@ -7,6 +8,11 @@ from litestar.datastructures import State
 from litestar.enums import RequestEncodingType
 from litestar.params import Body
 from litestar.response import Redirect, Template
+
+from appkit.manager import ApplicationManager
+from appkit.validation import ConfigValidator
+
+logger = logging.getLogger("tfeos.routes")
 
 
 @get("/")
@@ -24,7 +30,8 @@ async def app_list(request: Request) -> Template:
     ]
 
     return Template(
-        template_name="app_list.html", context={"applications": applications}
+        template_name="app_list.html",
+        context={"applications": applications, "show_sidebar": False},
     )
 
 
@@ -55,44 +62,72 @@ async def get_application_details(app_name: str, state: State) -> Dict[str, Any]
 
 @get("/applications/{app_name:str}/config")
 async def app_config_page(app_name: str, request: Request) -> Template:
-    manager = request.app.state.app_manager
-    app = manager.get_application(app_name)
+    try:
+        manager = request.app.state.app_manager
+        app = manager.get_application(app_name)
 
-    if not app:
-        return Redirect(path="/")
+        if not app:
+            return Redirect(path="/")
 
-    all_applications = [
-        {"name": a.metadata["name"]} for a in manager.get_all_applications()
-    ]
+        sidebar_apps = [
+            {"name": a.metadata["name"], "icon": a.metadata.get("icon")}
+            for a in manager.get_all_applications()
+        ]
 
-    return Template(
-        template_name="app_config.html",
-        context={
-            "metadata": app.metadata,
-            "dsl": app.dsl,
-            "config": app.config,
-            "all_applications": all_applications,
-        },
-    )
+        return Template(
+            template_name="app_config.html",
+            context={
+                "metadata": app.metadata,
+                "dsl": app.dsl,
+                "config": app.config,
+                "show_sidebar": True,
+                "sidebar_apps": sidebar_apps,
+                "current_app": app_name,
+            },
+        )
+    except Exception as e:
+        logger.error(f"Error loading config page for {app_name}: {e}", exc_info=True)
+        raise
 
 
 @post("/applications/{app_name:str}/config")
 async def update_config(app_name: str, request: Request) -> Redirect:
-    manager = request.app.state.app_manager
+    manager: ApplicationManager = request.app.state.app_manager
     app = manager.get_application(app_name)
 
     if not app:
         return Redirect(path="/")
 
     form_data = await request.form()
-    data = dict(form_data)
 
     processed_data = {}
-    for key, value in data.items():
-        if isinstance(value, list):
-            processed_data[key] = value[-1]
+    for key, value in form_data.items():
+        if key.endswith("[]"):
+            actual_key = key[:-2]
+            if isinstance(value, list):
+                processed_data[actual_key] = [v for v in value if v.strip()]
+            else:
+                processed_data[actual_key] = [value] if value.strip() else []
         else:
-            processed_data[key] = value
+            if isinstance(value, list):
+                processed_data[key] = value[-1]
+            else:
+                processed_data[key] = value
+
+    checkbox_fields = []
+    if "settings" in app.dsl:
+        checkbox_fields.extend(
+            [s["name"] for s in app.dsl["settings"] if s["type"] == "checkbox"]
+        )
+    if "setting_groups" in app.dsl:
+        for group in app.dsl["setting_groups"]:
+            checkbox_fields.extend(
+                [s["name"] for s in group["settings"] if s["type"] == "checkbox"]
+            )
+
+    for field in checkbox_fields:
+        if field not in processed_data:
+            processed_data[field] = False
 
     for key, value in processed_data.items():
         if isinstance(value, str):
@@ -114,6 +149,9 @@ async def update_config(app_name: str, request: Request) -> Redirect:
     valid, errors = ConfigValidator.validate(processed_data, app.dsl)
 
     if valid:
-        manager.update_config(app_name, processed_data)
+        os_instance = request.app.state.os_instance
+        manager.update_config(
+            app_name, processed_data, notify_callback=os_instance.on_app_config_changed
+        )
 
     return Redirect(path=f"/applications/{app_name}/config")

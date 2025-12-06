@@ -3,7 +3,7 @@ from typing import Tuple
 try:
     from rgbmatrix import graphics
 except ImportError:
-    graphics = None
+    from RGBMatrixEmulator import graphics
 
 
 class Color:
@@ -55,7 +55,8 @@ def draw_text_centered(
     canvas, font: Font, y: int, color: Color, text: str, canvas_width: int = 64
 ) -> int:
     if graphics:
-        text_len = graphics.DrawText(canvas, font._font, 0, 0, color._color, text)
+        # Create a temporary color at (0,0) to measure, then clear that pixel
+        text_len = graphics.DrawText(canvas, font._font, 0, -100, color._color, text)
         x = (canvas_width - text_len) // 2
         return graphics.DrawText(canvas, font._font, x, y, color._color, text)
     return 0

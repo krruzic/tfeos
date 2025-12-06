@@ -9,7 +9,7 @@
         {
             "name": "color",
             "label": "Text Color",
-            "type": "text",
+            "type": "color",
             "default": "#ffffff"
         }
     ]

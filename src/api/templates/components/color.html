@@ -1,0 +1,12 @@
+<div class="mb-4">
+  <label for="{{ setting.name }}" class="block text-sm font-medium mb-2">
+    {{ setting.label }}
+  </label>
+  <input
+    type="color"
+    id="{{ setting.name }}"
+    name="{{ setting.name }}"
+    value="{{ config.get(setting.name, setting.default) }}"
+    class="h-10 w-20 border border-gray-300 dark:border-gray-600 rounded cursor-pointer"
+  />
+</div>

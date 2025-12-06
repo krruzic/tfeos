@@ -16,3 +16,6 @@ class Config:
 
     def to_dict(self) -> dict:
         return self._data.copy()
+
+    def __repr__(self) -> str:
+        return f"Config({self.to_dict()})"

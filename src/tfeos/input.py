@@ -1,7 +1,8 @@
 import sys
 import termios
+import time
 import tty
-from threading import Thread
+from threading import Lock, Thread
 from typing import Callable, Optional
 
 
@@ -10,21 +11,37 @@ class InputHandler:
         self.callback = callback
         self.running = False
         self.thread = None
+        self.cancel_held = False
+        self.cancel_start_time = None
+        self.lock = Lock()
 
     def start(self):
         self.running = True
         self.thread = Thread(target=self._input_loop, daemon=True)
         self.thread.start()
+        self.hold_check_thread = Thread(target=self._hold_check_loop, daemon=True)
+        self.hold_check_thread.start()
 
     def stop(self):
         self.running = False
+
+    def _hold_check_loop(self):
+        while self.running:
+            with self.lock:
+                if self.cancel_held and self.cancel_start_time:
+                    elapsed = time.time() - self.cancel_start_time
+                    if elapsed >= 3.0:
+                        self.callback("force_exit")
+                        self.cancel_held = False
+                        self.cancel_start_time = None
+            time.sleep(0.1)
 
     def _input_loop(self):
         fd = sys.stdin.fileno()
         old_settings = termios.tcgetattr(fd)
 
         try:
-            tty.setraw(fd)
+            tty.setcbreak(fd)
 
             while self.running:
                 ch = sys.stdin.read(1)
@@ -44,8 +61,17 @@ class InputHandler:
                 elif ch == "k":
                     self.callback("accept")
                 elif ch == "j":
-                    self.callback("cancel")
+                    with self.lock:
+                        if not self.cancel_held:
+                            self.cancel_held = True
+                            self.cancel_start_time = time.time()
+                            self.callback("cancel")
                 elif ch == "\x03":
                     break
+                else:
+                    with self.lock:
+                        if self.cancel_held:
+                            self.cancel_held = False
+                            self.cancel_start_time = None
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)

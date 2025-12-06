@@ -1,0 +1,17 @@
+{
+    "settings": [
+        {
+            "name": "location",
+            "label": "Location",
+            "type": "text",
+            "default": "New York"
+        },
+        {
+            "name": "temperature_unit",
+            "label": "Temperature Unit",
+            "type": "radio",
+            "options": ["Fahrenheit", "Celsius"],
+            "default": "Fahrenheit"
+        }
+    ]
+}

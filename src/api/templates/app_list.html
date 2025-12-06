@@ -1,49 +1,28 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %}
+
+{% block content %}
 <div class="mb-8">
-  <h2 class="text-2xl font-bold">Applications</h2>
-  <p class="text-gray-600 dark:text-gray-400 mt-1">
-    Select an application to configure
-  </p>
+    <h2 class="text-2xl font-bold">Applications</h2>
+    <p class="text-gray-600 dark:text-gray-400 mt-1">Select an application to configure</p>
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-  {% for app in applications %}
-  <a
-    href="/applications/{{ app.name }}/config"
-    class="block bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-lg transition-shadow p-6"
-  >
-    <div class="flex items-start space-x-4">
-      {% if app.icon %}
-      <img
-        src="data:image/png;base64,{{ app.icon }}"
-        alt="{{ app.name }}"
-        class="w-16 h-16 pixelated"
-      />
-      {% else %}
-      <div class="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
-      {% endif %}
-      <div class="flex-1 min-w-0">
-        <h3 class="text-lg font-semibold truncate">{{ app.name }}</h3>
-        <p class="text-sm text-gray-500 dark:text-gray-400">
-          v{{ app.version }}
-        </p>
-        <p class="text-sm text-gray-600 dark:text-gray-300 mt-2">
-          {{ app.description }}
-        </p>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-          by {{ app.author }}
-        </p>
-      </div>
-    </div>
-  </a>
-  {% endfor %}
+    {% for app in applications %}
+    <a href="/applications/{{ app.name }}/config" class="block bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-lg transition-shadow p-6">
+        <div class="flex items-start space-x-4">
+            {% if app.icon %}
+            <img src="data:image/png;base64,{{ app.icon }}" alt="{{ app.name }}" class="w-16 h-16 pixelated">
+            {% else %}
+            <div class="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            {% endif %}
+            <div class="flex-1 min-w-0">
+                <h3 class="text-lg font-semibold truncate">{{ app.name }}</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400">v{{ app.version }}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-300 mt-2">{{ app.description }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">by {{ app.author }}</p>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
 </div>
-
-<style>
-  .pixelated {
-    image-rendering: pixelated;
-    image-rendering: -moz-crisp-edges;
-    image-rendering: crisp-edges;
-  }
-</style>
 {% endblock %}

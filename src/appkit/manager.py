@@ -1,7 +1,10 @@
+import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from .base import Application
+
+logger = logging.getLogger(__name__)
 
 
 class ApplicationManager:
@@ -16,7 +19,7 @@ class ApplicationManager:
                     app = self._load_application(app_dir)
                     self.applications[app.metadata["name"]] = app
                 except Exception as e:
-                    print(f"Failed to load application from {app_dir}: {e}")
+                    logger.exception(f"Failed to load application from {app_dir}: {e}")
 
     def _load_application(self, app_dir: Path):
         import importlib.util
@@ -27,13 +30,17 @@ class ApplicationManager:
         spec.loader.exec_module(module)
         return module.App(app_dir)
 
-    def get_application(self, name: str):
+    def get_application(self, name: str) -> Optional[Application]:
         return self.applications.get(name)
 
-    def get_all_applications(self) -> List:
+    def get_all_applications(self) -> List[Application]:
         return list(self.applications.values())
 
-    def update_config(self, app_name: str, config: Dict[str, Any]) -> None:
+    def update_config(
+        self, app_name: str, config: Dict[str, Any], notify_callback=None
+    ) -> None:
         app = self.get_application(app_name)
         if app:
             app.save_config(config)
+            if notify_callback:
+                notify_callback(app_name)

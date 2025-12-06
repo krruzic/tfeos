@@ -1,3 +1,4 @@
+# appkit/validation.py
 from typing import Any, Dict, List, Tuple
 
 
@@ -25,7 +26,7 @@ class ConfigValidator:
 
             value = config_data[name]
 
-            if setting_type in ["dropdown", "select", "radio"]:
+            if setting_type in ["dropdown", "radio"]:
                 if value not in setting["options"]:
                     errors.append(f"Invalid value for {name}: {value} not in options")
 
@@ -45,11 +46,21 @@ class ConfigValidator:
                 if not isinstance(value, str):
                     errors.append(f"Invalid text value for {name}: {value}")
 
+            elif setting_type == "color":
+                if not isinstance(value, str):
+                    errors.append(f"Invalid color value for {name}: {value}")
+                elif not value.startswith("#") or len(value) != 7:
+                    errors.append(f"Invalid color format for {name}: {value}")
+
+            elif setting_type == "list":
+                if not isinstance(value, list):
+                    errors.append(f"Invalid list value for {name}: {value}")
+
         return len(errors) == 0, errors
 
 
 class DSLValidator:
-    VALID_TYPES = ["dropdown", "text", "checkbox", "radio", "slider"]
+    VALID_TYPES = ["dropdown", "text", "checkbox", "radio", "slider", "color", "list"]
 
     @staticmethod
     def validate(dsl: Dict[str, Any]) -> List[str]:
@@ -90,7 +101,7 @@ class DSLValidator:
 
         setting_type = setting.get("type")
 
-        if setting_type in ["dropdown", "radio"]:
+        if setting_type in ["dropdown", "select", "radio"]:
             if "options" not in setting:
                 errors.append(
                     f"Setting {setting.get('name', 'unknown')} missing options"

@@ -5,14 +5,17 @@ import sys
 import time
 from pathlib import Path
 from threading import Thread
-from typing import final
+from typing import Optional, final
 
 import uvicorn
 
-from appkit.manager import ApplicationManager
+from api.app import create_app
+from appkit.config import Config
+from appkit.manager import Application, ApplicationManager
 from appkit.menu import AppMenuItem, AppMenuScene
 
-from .logging import LOG_FORMAT, setup_logging
+from .input import InputHandler
+from .logging import LOG_FORMAT
 
 
 def find_project_root() -> Path:
@@ -40,9 +43,10 @@ class LEDMatrixOS:
         self.current_scene = None
         self.input_handler = None
         self.enable_input = enable_input
-        self.logger = setup_logging(raw_mode=enable_input)
+        self.logger = logging.getLogger("tfeos")
         self.manager = ApplicationManager(apps_dir)
         self.manager.load_applications()
+        self.current_framerate = 30
 
         menu_items = []
         for app in self.manager.get_all_applications():
@@ -56,7 +60,7 @@ class LEDMatrixOS:
 
         self.menu_scene = AppMenuScene(menu_items)
         self.current_scene = self.menu_scene
-        self.active_app = None
+        self.active_app: Optional[str] = None
 
     def setup_matrix(self):
         if not self.enable_matrix:
@@ -97,15 +101,26 @@ class LEDMatrixOS:
             self.logger.error(f"Could not initialize matrix: {e}")
             self.enable_matrix = False
 
-    def setup_input(self):
-        from .input import InputHandler
+    def on_app_config_changed(self, app_name: str):
+        if self.active_app == app_name:
+            app: Optional[Application] = self.manager.get_application(app_name)
+            if app:
+                app.on_config_changed(app.config)
+                self.logger.info(f"Config changed for active app: {app_name}")
 
+    def setup_input(self):
         self.input_handler = InputHandler(self.handle_input)
         self.input_handler.start()
         self.logger.info("Input handler started")
 
     def handle_input(self, input_type: str):
         if not self.current_scene:
+            return
+
+        if input_type == "force_exit":
+            if self.active_app:
+                self.logger.info("Force exit from app")
+                self.return_to_menu()
             return
 
         result = self.current_scene.handle_input(input_type)
@@ -125,7 +140,8 @@ class LEDMatrixOS:
 
                 self.canvas = self.matrix.SwapOnVSync(self.canvas)
 
-            time.sleep(0.016)
+            sleep_time = 1.0 / self.current_framerate
+            time.sleep(sleep_time)
 
     def handle_menu_selection(self, app_name: str):
         app = self.manager.get_application(app_name)
@@ -134,11 +150,15 @@ class LEDMatrixOS:
             if scene:
                 self.current_scene = scene
                 self.active_app = app_name
-                self.logger.info(f"Launched app: {app_name}")
+                self.current_framerate = app.get_framerate()
+                self.logger.info(
+                    f"Launched app: {app_name} (FPS: {self.current_framerate})"
+                )
 
     def return_to_menu(self):
         self.current_scene = self.menu_scene
         self.active_app = None
+        self.current_framerate = 30
         self.logger.info("Returned to menu")
 
     def start(self, host: str = "0.0.0.0", port: int = 8000):
@@ -154,8 +174,6 @@ class LEDMatrixOS:
 
         render_thread = Thread(target=self.render_loop, daemon=True)
         render_thread.start()
-
-        from api.app import create_app
 
         app = create_app(self.apps_dir, TEMPLATES_DIR)
         app.state.app_manager = self.manager

@@ -1,0 +1,16 @@
+{
+    "settings": [
+        {
+            "name": "symbols",
+            "label": "Stock Symbols (e.g., AAPL, GOOGL)",
+            "type": "list",
+            "default": ["AAPL", "GOOGL", "TSLA"]
+        },
+        {
+            "name": "crypto_symbols",
+            "label": "Crypto Symbols (e.g., bitcoin, ethereum)",
+            "type": "list",
+            "default": ["bitcoin", "ethereum"]
+        }
+    ]
+}

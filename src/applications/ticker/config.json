@@ -1,0 +1,5 @@
+{
+    "scene": "ticker",
+    "symbols": ["AAPL", "GOOGL", "TSLA"],
+    "crypto_symbols": ["bitcoin", "ethereum"]
+}

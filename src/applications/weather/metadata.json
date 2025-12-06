@@ -1,0 +1,7 @@
+{
+    "name": "weather",
+    "version": "1.0.0",
+    "icon": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAY0lEQVR4nK1SMRLAMAhSX9X/T/lVOuSuMUhwKSPhBCNmv2AOm4M/RasAQQB7U6ODP33OpXE9sg4KJM4ANaRTVoA4aOAO1C1vgg51S2BIpKxQv1SP/anz065GC1KN2737Hoguvse/J94MZGYzAAAAAElFTkSuQmCC",
+    "description": "Current weather conditions",
+    "author": "System"
+}
