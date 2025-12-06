@@ -88,15 +88,9 @@ class SnakeScene(Scene):
             self.snake.pop()
 
     def _draw_text_overlay(self, canvas, line1, line2):
-        # Simple pixel text overlay
-        # Draw semi-transparent background
-        for y in range(10, 22):
-            for x in range(16, 48):
-                canvas.SetPixel(x, y, 0, 0, 0)
-
         # Draw text (simplified - just show the message centered)
-        self._draw_simple_text(canvas, line1, 20, 12)
-        self._draw_simple_text(canvas, line2, 20, 18)
+        self._draw_simple_text(canvas, line1, 25, 12)
+        self._draw_simple_text(canvas, line2, 25, 18)
 
     def _draw_simple_text(self, canvas, text, x, y):
         # Very basic 3x5 pixel font

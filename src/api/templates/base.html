@@ -4,36 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Twenty Forty Eight OS{% endblock %}</title>
-    <script>
-    tailwind.config = {
-        darkMode: 'class'
-    }
-    </script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark')
-        } else {
-            document.documentElement.classList.remove('dark')
-        }
-    </script>
+    <link rel="icon" href="data:image/png;base64,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">
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen transition-colors">
     <nav class="bg-white dark:bg-gray-800 shadow">
-        <div class="mx-auto px-4 sm:px-6 lg:px-8" style="max-width: 80%">
+        <div class="mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
                     <a href="/" class="text-xl font-semibold hover:text-gray-600 dark:hover:text-gray-300">Twenty Forty Eight OS</a>
-                </div>
-                <div class="flex items-center">
-                    <button onclick="toggleTheme()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-                        <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                        </svg>
-                        <svg class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-                        </svg>
-                    </button>
                 </div>
             </div>
         </div>
@@ -61,7 +40,7 @@
         </aside>
         {% endif %}
 
-        <main class="flex-1 px-6 sm:px-8 lg:px-10 py-8 justify-center mx-auto" style="max-width: 80%">
+        <main class="flex-1 justify-center mx-auto" style="max-width: 80%">
             {% block content %}{% endblock %}
         </main>
     </div>

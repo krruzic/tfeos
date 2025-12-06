@@ -100,6 +100,7 @@ async def update_config(app_name: str, request: Request) -> Redirect:
 
     form_data = await request.form()
 
+    logger.info(f"Received config: {form_data}")
     processed_data = {}
     for key, value in form_data.items():
         if key.endswith("[]"):
@@ -107,13 +108,17 @@ async def update_config(app_name: str, request: Request) -> Redirect:
             if isinstance(value, list):
                 processed_data[actual_key] = [v for v in value if v.strip()]
             else:
-                processed_data[actual_key] = [value] if value.strip() else []
+                if processed_data.get(actual_key):
+                    if value.strip():
+                        processed_data[actual_key].append(value)
+                else:
+                    processed_data[actual_key] = [value] if value.strip() else []
         else:
             if isinstance(value, list):
                 processed_data[key] = value[-1]
             else:
                 processed_data[key] = value
-
+    logger.info(f"Processed config: {processed_data}")
     checkbox_fields = []
     if "settings" in app.dsl:
         checkbox_fields.extend(

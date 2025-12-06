@@ -6,6 +6,7 @@ from typing import Optional
 import requests
 
 from appkit.base import Application, Scene
+from appkit.config import Config
 from appkit.graphics_helpers import Color, Font, draw_text
 
 
@@ -175,7 +176,7 @@ class TickerScene(Scene):
 
 
 class App(Application):
-    def on_config_changed(self):
+    def on_config_changed(self, new_config: Config):
         return
 
     def get_framerate(self) -> int:

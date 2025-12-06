@@ -1,7 +1,7 @@
 {
     "name": "nhl",
     "version": "1.0.0",
-    "icon": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAdUlEQVR4nO2RQREAIQwDw82JQURFIKIikIAIRCACEbiBH1OgnXvclzxpNpQAXP2W0w5DCN0CSikL82ogEYGZDzjnDABdBrkdjjHCe2+u3FpDSmlu88ghEU2TBUvf8YRaq3mznEvfUojs4Cvk6EAL0rT/whUwAGrTLx6VRYdBAAAAAElFTkSuQmCC",
+    "icon": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAi0lEQVQ4T71TAQqAMAjUn+3p+5l1C+Mm00ZQwmi4vDvlVBGx87wOdYDeu7TWJiDkEKu85waAFzPI093fJwCwVaysJgXIhmFmogq+K/4BcFb+gh1KthSg0IPlly14EQqiAp5PqqAq+g6Ae9rxNJustHIGtgSoXMjmibtxK4gDWrHHpRqewDLt9J39cwCZUZ0BIebJMwAAAABJRU5ErkJggg==",
     "description": "NHL Scoreboard",
     "author": "System"
 }

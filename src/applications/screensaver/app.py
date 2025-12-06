@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 from appkit.base import Application, Scene
+from appkit.config import Config
 from appkit.graphics_helpers import Color
 
 
@@ -259,7 +260,7 @@ class ScreensaverManager(Scene):
 
 
 class App(Application):
-    def on_config_changed(self):
+    def on_config_changed(self, new_config: Config):
         return
 
     def get_framerate(self) -> int:

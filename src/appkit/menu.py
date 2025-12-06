@@ -49,7 +49,7 @@ class AppMenuScene(Scene):
             col = idx % 3
 
             x = col * (self.icon_size + self.gap)
-            y = row * (self.icon_size + self.gap)
+            y = row * (self.icon_size)
 
             global_idx = start_idx + idx
             is_selected = global_idx == self.selected_index

@@ -3,41 +3,43 @@
 {% block title %}{{ metadata.name }} - Configuration{% endblock %}
 
 {% block content %}
-<div class-"mb-8" style="max-width: 80%">
+<div class="m-8">
     <div class="mb-8">
-        <a href="/" class="text-blue-600 dark:text-blue-400 hover:underline text-sm">&larr; Back to applications</a>
-        <h2 class="text-4xl font-bold mt-4">{{ metadata.name }}</h2>
-        <p class="text-gray-600 dark:text-gray-400 mt-1">{{ metadata.description }}</p>
-    </div>
+        <div class="mb-8">
+            <a href="/" class="text-blue-600 dark:text-blue-400 hover:underline text-sm">&larr; Back to applications</a>
+            <h2 class="text-4xl font-bold mt-4">{{ metadata.name }}</h2>
+            <p class="text-gray-600 dark:text-gray-400 mt-1">{{ metadata.description }}</p>
+        </div>
 
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <form method="POST" action="/applications/{{ metadata.name }}/config" class="space-y-6">
-            {% if dsl.settings %}
-                {% for setting in dsl.settings %}
-                    {% include 'components/' + setting.type + '.html' %}
-                {% endfor %}
-            {% endif %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <form method="POST" action="/applications/{{ metadata.name }}/config" class="space-y-6">
+                {% if dsl.settings %}
+                    {% for setting in dsl.settings %}
+                        {% include 'components/' + setting.type + '.html' %}
+                    {% endfor %}
+                {% endif %}
 
-            {% if dsl.setting_groups %}
-                {% for group in dsl.setting_groups %}
-                    <div class="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6 first:border-t-0 first:pt-0 first:mt-0">
-                        <h3 class="text-lg font-semibold mb-4">{{ group.name }}</h3>
-                        {% for setting in group.settings %}
-                            {% include 'components/' + setting.type + '.html' %}
-                        {% endfor %}
-                    </div>
-                {% endfor %}
-            {% endif %}
+                {% if dsl.setting_groups %}
+                    {% for group in dsl.setting_groups %}
+                        <div class="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6 first:border-t-0 first:pt-0 first:mt-0">
+                            <h3 class="text-lg font-semibold mb-4">{{ group.name }}</h3>
+                            {% for setting in group.settings %}
+                                {% include 'components/' + setting.type + '.html' %}
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                {% endif %}
 
-            <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <a href="/" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-                    Cancel
-                </a>
-                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                    Save Configuration
-                </button>
-            </div>
-        </form>
+                <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <a href="/" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                        Cancel
+                    </a>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        Save Configuration
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 {% endblock %}
