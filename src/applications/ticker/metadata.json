@@ -1,7 +1,7 @@
 {
     "name": "ticker",
     "version": "1.0.0",
-    "icon": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAPklEQVR4nGNgGJ7gPz5JJuyqcetB1fAfBxu7BkwVeN1GLGDEFMJqLlwdhqexmYEsgkUDmgosbsAFqOJnOgAAMscJCOULwB4AAAAASUVORK5CYII=",
+    "icon": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAg0lEQVQ4T52S2w7AIAhD8f8/ehuZuHKpkpn4INFDLR0icj379xoLoBg94apq4coLQA0GYbXQ5FNw+kQFnKKzBw3p1i8rIJ2YNx5QzaMyFtr7KTAfIgTu9U0k8C1glzAT5QCnOKDzdAoskNVjrbU9YNFYgCifxSHWkwc4MdYV6+0vsIjccA8oASxEQscAAAAASUVORK5CYII=",
     "description": "Stock and cryptocurrency price ticker",
     "author": "System"
 }

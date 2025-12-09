@@ -1,10 +1,13 @@
 import argparse
 import logging
+import select
 import signal
 import sys
+import termios
 import time
+import tty
 from pathlib import Path
-from threading import Thread
+from threading import Lock, Thread
 from typing import Optional, final
 
 import uvicorn
@@ -14,22 +17,15 @@ from appkit.config import Config
 from appkit.manager import Application, ApplicationManager
 from appkit.menu import AppMenuItem, AppMenuScene
 
-from .input import InputHandler
+from .input import InputResult, InputType
 from .logging import LOG_FORMAT
 
+CURRENT_FILE = Path(__file__).resolve()
+SRC_DIR = CURRENT_FILE.parent.parent
+APPS_DIR = SRC_DIR / "applications"
+TEMPLATES_DIR = SRC_DIR / "api" / "templates"
 
-def find_project_root() -> Path:
-    current = Path(__file__).resolve()
-    while current != current.parent:
-        if (current / "pyproject.toml").exists():
-            return current
-        current = current.parent
-    raise RuntimeError("Could not find project root")
-
-
-PROJECT_ROOT = find_project_root()
-APPS_DIR = PROJECT_ROOT / "src" / "applications"
-TEMPLATES_DIR = PROJECT_ROOT / "src" / "api" / "templates"
+logger = logging.getLogger("tfeos")
 
 
 @final
@@ -40,10 +36,8 @@ class LEDMatrixOS:
         self.running = False
         self.matrix = None
         self.canvas = None
-        self.current_scene = None
         self.input_handler = None
         self.enable_input = enable_input
-        self.logger = logging.getLogger("tfeos")
         self.manager = ApplicationManager(apps_dir)
         self.manager.load_applications()
         self.current_framerate = 30
@@ -59,8 +53,7 @@ class LEDMatrixOS:
             )
 
         self.menu_scene = AppMenuScene(menu_items)
-        self.current_scene = self.menu_scene
-        self.active_app: Optional[str] = None
+        self.active_app: Optional[Application] = None
 
     def setup_matrix(self):
         if not self.enable_matrix:
@@ -78,7 +71,7 @@ class LEDMatrixOS:
 
             self.matrix = RGBMatrix(options=options)
             self.canvas = self.matrix.CreateFrameCanvas()
-            self.logger.info("Matrix initialized")
+            logger.info("Matrix initialized")
         except ImportError:
             try:
                 from RGBMatrixEmulator import RGBMatrix, RGBMatrixOptions
@@ -91,131 +84,128 @@ class LEDMatrixOS:
 
                 self.matrix = RGBMatrix(options=options)
                 self.canvas = self.matrix.CreateFrameCanvas()
-                self.logger.info("Using RGBMatrixEmulator")
+                logger.info("Using RGBMatrixEmulator")
             except ImportError:
-                self.logger.warning(
+                logger.warning(
                     "Neither rgbmatrix nor RGBMatrixEmulator found, matrix disabled"
                 )
                 self.enable_matrix = False
         except Exception as e:
-            self.logger.error(f"Could not initialize matrix: {e}")
+            logger.error(f"Could not initialize matrix: {e}")
             self.enable_matrix = False
 
-    def on_app_config_changed(self, app_name: str):
-        if self.active_app == app_name:
-            app: Optional[Application] = self.manager.get_application(app_name)
-            if app:
-                app.on_config_changed(app.config)
-                self.logger.info(f"Config changed for active app: {app_name}")
-
-    def setup_input(self):
-        self.input_handler = InputHandler(self.handle_input)
-        self.input_handler.start()
-        self.logger.info("Input handler started")
-
-    def handle_input(self, input_type: str):
-        if not self.current_scene:
-            return
-
-        # Let the app handle input first
+    def on_app_config_changed(self, app_name: str, new_config: Config):
+        logger.info(f"Config changed for active app: {app_name}")
         if self.active_app:
-            app = self.manager.get_application(self.active_app)
-            if app:
-                app_result = app.handle_input(input_type)
-                if app_result:
-                    # App wants to switch scenes
-                    scenes = app.get_scenes()
-                    new_scene = scenes.get(app_result)
-                    if new_scene:
-                        new_scene.matrix = self.matrix
-                        self.current_scene = new_scene
-                        return
+            if self.active_app.application_config.app_name == app_name:
+                self.active_app.handle_new_config(new_config)
 
-        # Then let the scene handle input
-        result = self.current_scene.handle_input(input_type)
+    def read_input(self) -> Optional[InputType]:
+        """Read input if available, returning InputType or None. Non-blocking"""
 
-        if result == "menu":
-            self.return_to_menu()
-        elif result:
-            self.handle_menu_selection(result)
+        if select.select([sys.stdin], [], [], 0)[0]:
+            old_settings = termios.tcgetattr(sys.stdin)
+            try:
+                ch = sys.stdin.read(1)
 
-    def render_loop(self):
+                if ch == "\x1b":
+                    ch2 = sys.stdin.read(1)
+                    if ch2 == "[":
+                        ch3 = sys.stdin.read(1)
+                        if ch3 == "A":
+                            return InputType.UP
+                        if ch3 == "B":
+                            return InputType.DOWN
+                        if ch3 == "C":
+                            return InputType.RIGHT
+                        if ch3 == "D":
+                            return InputType.LEFT
+                elif ch.lower() == "k":
+                    return InputType.ACCEPT
+                elif ch.lower() == "j":
+                    return InputType.CANCEL
+            finally:
+                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+
+        return None
+
+    def core_loop(self):
+        tty.setcbreak(sys.stdin.fileno())
+
         while self.running:
-            if self.enable_matrix and self.canvas:
-                self.canvas.Clear()
+            input_key = self.read_input()
 
-                if self.current_scene:
-                    self.current_scene.render(self.canvas)
-
-                self.canvas = self.matrix.SwapOnVSync(self.canvas)
-
-            sleep_time = 1.0 / self.current_framerate
+            if self.active_app:
+                if input_key:
+                    input_result = self.active_app.handle_input(input_key)
+                    if input_result:
+                        self.return_to_menu()
+                        self.canvas.Clear()
+                        continue
+                self.active_app.render(self.canvas)
+                sleep_time = 1.0 / self.active_app.get_framerate()
+            else:
+                if input_key:
+                    input_result = self.menu_scene.handle_input(input_key)
+                    if input_result:
+                        self.handle_menu_selection(input_result)
+                        self.canvas.Clear()
+                        continue
+                self.menu_scene.render(self.canvas)
+                sleep_time = 1.0 / self.current_framerate
+            self.canvas = self.matrix.SwapOnVSync(self.canvas)
             time.sleep(sleep_time)
 
     def handle_menu_selection(self, app_name: str):
-        app: Optional[Application] = self.manager.get_application(app_name)
+        app = self.manager.launch_application(app_name, self.matrix)
         if app:
-            app.matrix = self.matrix
-            scene = app.default_scene()
-            if scene:
-                scene.matrix = self.matrix
-                self.current_scene = scene
-                self.active_app = app_name
-                self.logger.info(f"Launched app: {app_name}")
+            self.active_app = app
+            logger.info(f"Launched app: {app_name}")
 
     def return_to_menu(self):
-        self.current_scene = self.menu_scene
         self.active_app = None
         self.current_framerate = 30
-        self.logger.info("Returned to menu")
+        logger.info("Returned to menu")
 
     def start(self, host: str = "0.0.0.0", port: int = 8000):
-        self.logger.info(
-            f"Loaded {len(self.manager.get_all_applications())} applications"
-        )
+        logger.info(f"Loaded {len(self.manager.get_all_applications())} applications")
 
         self.setup_matrix()
-        if self.enable_input:
-            self.setup_input()
-
         self.running = True
 
-        render_thread = Thread(target=self.render_loop, daemon=True)
-        render_thread.start()
+        app = create_app(
+            self.apps_dir,
+            TEMPLATES_DIR,
+            {"app_manager": self.manager, "os_instance": self},
+        )
 
-        app = create_app(self.apps_dir, TEMPLATES_DIR)
-        app.state.app_manager = self.manager
-        app.state.os_instance = self
-
-        log_config = uvicorn.config.LOGGING_CONFIG  # noqa
+        log_config = uvicorn.config.LOGGING_CONFIG
         log_config["formatters"]["access"]["fmt"] = LOG_FORMAT
         log_config["formatters"]["default"]["fmt"] = LOG_FORMAT
         config = uvicorn.Config(app, host=host, port=port, log_config=log_config)
         server = uvicorn.Server(config)
 
+        # Run uvicorn in a thread instead of main thread
+        api_thread = Thread(target=server.run, daemon=True, name="APIThread")
+        api_thread.start()
+
         def signal_handler(sig, frame):
-            self.logger.info("Shutting down...")
+            logger.info("Shutting down...")
             self.running = False
-            if self.input_handler:
-                self.input_handler.stop()
             sys.exit(0)
 
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
 
-        self.logger.info(f"API server running at http://{host}:{port}")
+        logger.info(f"API server running at http://{host}:{port}")
         if self.enable_input:
-            self.logger.info(
-                "Controls: Arrow keys to navigate, K to accept, J to cancel"
-            )
+            logger.info("Controls: Arrow keys to navigate, K to accept, J to cancel")
 
-        server.run()
-
-    def stop(self):
-        self.running = False
-        if self.input_handler:
-            self.input_handler.stop()
-
+        # Keep main thread alive
+        try:
+            self.core_loop()
+        except KeyboardInterrupt:
+            signal_handler(signal.SIGINT, None)
 
 def main():
     parser = argparse.ArgumentParser(description="Twenty Forty Eight OS")

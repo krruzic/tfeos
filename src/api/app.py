@@ -1,5 +1,5 @@
 from pathlib import Path
-
+from typing import Dict, Any
 from litestar import Litestar
 from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.datastructures import State
@@ -16,17 +16,14 @@ async def after_exception_handler(
     raise Exception
 
 
-def create_app(apps_dir: Path, templates_dir: Path) -> Litestar:
-    manager = ApplicationManager(apps_dir)
-    manager.load_applications()
-
+def create_app(apps_dir: Path, templates_dir: Path, state: Dict[str, Any]) -> Litestar:
     app = Litestar(
         after_exception=[after_exception_handler],
         route_handlers=[app_list, app_config_page, update_config],
         template_config=TemplateConfig(
             directory=templates_dir, engine=JinjaTemplateEngine
         ),
-        state=State({"app_manager": manager}),
+        state=State(state),
     )
 
     return app

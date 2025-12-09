@@ -2,15 +2,20 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from appkit.base import Application, Scene
+from PIL import Image
+
+from appkit.base import Application, Scene, ApplicationConfig
 from appkit.config import Config
 from appkit.graphics_helpers import Color, Font, draw_text_centered
+from tfeos.input import InputResult, InputType
 
 
 class ClockScene(Scene):
-    def __init__(self, config, app_dir: Path):
-        self.config = config
-        font_path = app_dir / "resources" / "7x13.bdf"
+    def __init__(self, application_config):
+        self.config = application_config.config
+        self.app_dir = application_config.app_dir
+
+        font_path = self.app_dir / "resources" / "7x13.bdf"
         self.font = Font(str(font_path))
 
     def render(self, canvas) -> None:
@@ -35,17 +40,21 @@ class ClockScene(Scene):
 
 
 class App(Application):
-    def on_config_changed(self, new_config: Config):
-        return
+    def __init__(self, application_config: ApplicationConfig, matrix):
+        super().__init__(application_config, matrix)
+        self.scenes = {"clock": ClockScene(self.application_config)}
+        self.scene = self.scenes["clock"]
+        self.scene_order = ["clock"]
+        self.current_scene_index = 0
 
     def get_framerate(self) -> int:
         return 1
 
-    def default_scene(self) -> Scene:
-        return ClockScene(self.config, self.app_dir)
+    def _render(self, canvas) -> None:
+        self.scene.render(canvas)
 
-    def get_active_scene(self) -> Scene:
-        return ClockScene(self.config, self.app_dir)
+    def _handle_input(self, input_type: InputType) -> Optional[InputResult]:
+        return None
 
-    def get_scenes(self):
-        return {"clock": ClockScene(self.config, self.app_dir)}
+    def handle_new_config(self, new_config: Config) -> None:
+        return

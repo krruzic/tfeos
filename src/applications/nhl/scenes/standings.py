@@ -6,33 +6,39 @@ from typing import Optional
 
 from PIL import Image, ImageDraw, ImageFont
 
+from tfeos.input import InputType, InputResult
 from appkit.base import Scene
-from appkit.graphics_helpers import clear_image, set_image_on_canvas
+from appkit.graphics_helpers import MatrixCanvas, Region
 
 from .nhl_api import get_standings
 
 
 class NHLStandingsScene(Scene):
-    def __init__(self, config, app_dir: Path):
-        super().__init__()
-        self.config = config
-        self.app_dir = app_dir
+    def __init__(self, application_config):
+        self.config = application_config.config
+        self.app_dir = application_config.app_dir
         self.data = {}
-        self.current_view_type = None  # 'Division', 'Conference', or 'League'
+        self.current_view_type = None
         self.current_division_index = 0
         self.current_conference_index = 0
         self.last_update = None
         self.scroll_offset = 0
         self.last_scroll_time = time.time()
-        self.scroll_pause_until = time.time() + 0.5  # Initial pause before scrolling
+        self.scroll_pause_until = time.time() + 0.5
         self.scroll_at_bottom = False
 
         self.divisions = ["Atlantic", "Metropolitan", "Central", "Pacific"]
         self.conferences = ["Eastern", "Western"]
 
-        # Load fonts
-        font_path = app_dir / "resources" / "fonts"
-        self.FONTS = {
+        self.matrix_canvas = MatrixCanvas()
+        
+        self.side_region = Image.new("RGB", (8, 32))
+        self.standings_region = Image.new("RGB", (56, 256))
+        self.side_draw = ImageDraw.Draw(self.side_region)
+        self.standings_draw = ImageDraw.Draw(self.standings_region)
+
+        font_path = self.app_dir / "resources" / "fonts"
+        self.fonts = {
             "sm": ImageFont.load(str(font_path / "Tamzen5x9r.pil")),
             "sm_bold": ImageFont.load(str(font_path / "Tamzen5x9b.pil")),
             "med": ImageFont.load(str(font_path / "Tamzen6x12r.pil")),
@@ -41,8 +47,7 @@ class NHLStandingsScene(Scene):
             "lrg_bold": ImageFont.load(str(font_path / "Tamzen8x15b.pil")),
         }
 
-        # Colors
-        self.COLOURS = {
+        self.colours = {
             "white": (255, 255, 255),
             "black": (0, 0, 0),
             "grey_dark": (70, 70, 70),
@@ -52,20 +57,6 @@ class NHLStandingsScene(Scene):
             "green": (28, 122, 0),
         }
 
-        # Create images
-        self.images = {
-            "side": Image.new("RGB", (8, 32)),
-            "standings": Image.new("RGB", (56, 256)),
-            "full": Image.new("RGB", (64, 32)),
-        }
-
-        self.draw = {
-            "side": ImageDraw.Draw(self.images["side"]),
-            "standings": ImageDraw.Draw(self.images["standings"]),
-            "full": ImageDraw.Draw(self.images["full"]),
-        }
-
-        self.LEAGUE = "NHL"
         self._initialize_view()
 
     def _initialize_view(self):
@@ -82,28 +73,24 @@ class NHLStandingsScene(Scene):
             self.current_conference_index = self.conferences.index(default_conference)
 
     def render(self, canvas) -> None:
-        # Update standings data every 5 minutes
         if not self.last_update or (datetime.now() - self.last_update).seconds > 300:
             self.data["standings"] = get_standings()
             self.last_update = datetime.now()
 
         if not self.data.get("standings"):
-            clear_image(self.images["full"], self.draw["full"])
-            self.draw["full"].text(
-                (2, 12), "Loading...", font=self.FONTS["sm"], fill=self.COLOURS["white"]
+            self.matrix_canvas.clear_region(Region.FULL)
+            self.matrix_canvas.draw_text(
+                Region.FULL, 2, 12, "Loading...", self.colours["white"], self.fonts["sm"]
             )
-            set_image_on_canvas(canvas, self.images["full"])
+            self.matrix_canvas.render_frame(canvas)
             return
 
-        # Get current view data
         view_data = self._get_current_view_data()
         if not view_data:
             return
 
-        # Build standings for current view
         self._build_standings_image(view_data["name"], view_data["teams"])
 
-        # Handle scrolling
         num_teams = len(view_data["teams"])
         max_scroll = max(0, (num_teams - 4) * 8)
 
@@ -116,7 +103,6 @@ class NHLStandingsScene(Scene):
                     self.scroll_at_bottom = False
                     self.last_scroll_time = current_time
             elif current_time < self.scroll_pause_until:
-                # Paused at a row
                 pass
             elif current_time - self.last_scroll_time > 0.075:
                 self.scroll_offset += 1
@@ -129,12 +115,12 @@ class NHLStandingsScene(Scene):
                 elif self.scroll_offset % 8 == 0:
                     self.scroll_pause_until = current_time + 1.0
 
-        # Compose and display
-        clear_image(self.images["full"], self.draw["full"])
-        self.images["full"].paste(self.images["side"], (0, 0))
-        self.images["full"].paste(self.images["standings"], (8, -self.scroll_offset))
+        self.matrix_canvas.clear_region(Region.FULL)
+        self.matrix_canvas.draw_image(Region.FULL, 0, 0, self.side_region)
+        cropped_standings = self.standings_region.crop((0, self.scroll_offset, 56, self.scroll_offset + 32))
+        self.matrix_canvas.draw_image(Region.FULL, 8, 0, cropped_standings)
 
-        set_image_on_canvas(canvas, self.images["full"])
+        self.matrix_canvas.render_frame(canvas)
 
     def _get_current_view_data(self):
         standings = self.data["standings"]
@@ -147,74 +133,63 @@ class NHLStandingsScene(Scene):
             conference = self.conferences[self.current_conference_index]
             conf_data = standings["conference"]["conferences"][conference]
             return {"name": conf_data["abrv"], "teams": conf_data["teams"]}
-        else:  # League
+        else:
             league_data = standings["league"]["leagues"]["NHL"]
             return {"name": league_data["abrv"], "teams": league_data["teams"]}
 
     def _build_standings_image(self, name, teams):
-        # Clear images
-        clear_image(self.images["side"], self.draw["side"])
-        clear_image(self.images["standings"], self.draw["standings"])
+        self.side_draw.rectangle([(0, 0), (8, 32)], fill=(0, 0, 0))
+        self.standings_draw.rectangle([(0, 0), (56, 256)], fill=(0, 0, 0))
 
-        # Build sidebar
         tmp_img = Image.new("RGB", (32, 8))
         tmp_draw = ImageDraw.Draw(tmp_img)
-        tmp_draw.rectangle([(0, 0), (32, 8)], fill=self.COLOURS["white"])
-        tmp_draw.text(
-            (1, 0), self.LEAGUE, font=self.FONTS["sm"], fill=self.COLOURS["black"]
-        )
-        tmp_draw.text((17, 0), name, font=self.FONTS["sm"], fill=self.COLOURS["black"])
+        tmp_draw.rectangle([(0, 0), (32, 8)], fill=self.colours["white"])
+        tmp_draw.text((1, 0), "NHL", font=self.fonts["sm"], fill=self.colours["black"])
+        tmp_draw.text((17, 0), name, font=self.fonts["sm"], fill=self.colours["black"])
         tmp_img = tmp_img.rotate(90, expand=True)
-        self.images["side"].paste(tmp_img, (0, 0))
+        self.side_region.paste(tmp_img, (0, 0))
 
-        # Build standings rows
         fav_team = self.config.get("favourite_team")
 
         for row, team in enumerate(teams):
             y_offset = row * 8
 
-            # Determine team color
             team_colour = (
-                self.COLOURS["yellow"]
+                self.colours["yellow"]
                 if team["team_abrv"] == fav_team
-                else self.COLOURS["white"]
+                else self.colours["white"]
             )
 
-            # Draw horizontal line
             if row < len(teams) - 1:
-                self.draw["standings"].line(
+                self.standings_draw.line(
                     [(1, y_offset + 7), (54, y_offset + 7)],
-                    fill=self.COLOURS["grey_dark"],
+                    fill=self.colours["grey_dark"],
                 )
 
-            # Draw rank
             rank_str = str(team["rank"])
             rank_offset = 5 if len(rank_str) < 2 else 0
-            self.draw["standings"].text(
+            self.standings_draw.text(
                 (1 + rank_offset, y_offset - 1),
                 rank_str,
-                font=self.FONTS["sm"],
+                font=self.fonts["sm"],
                 fill=team_colour,
             )
 
-            # Draw clinch indicator
             if team.get("has_clinched"):
-                self.draw["standings"].text(
+                self.standings_draw.text(
                     (14, y_offset - 2),
                     "*",
-                    font=self.FONTS["med"],
-                    fill=self.COLOURS["red"],
+                    font=self.fonts["med"],
+                    fill=self.colours["red"],
                 )
 
-            # Draw team abbreviation
-            self.draw["standings"].text(
+            self.standings_draw.text(
                 (21, y_offset - 1),
                 team["team_abrv"],
-                font=self.FONTS["sm"],
+                font=self.fonts["sm"],
                 fill=team_colour,
             )
 
-            # Draw points
             pts_str = str(team["points"])
             if team["points"] < 10:
                 pts_offset = 0
@@ -222,10 +197,10 @@ class NHLStandingsScene(Scene):
                 pts_offset = -5
             else:
                 pts_offset = -10
-            self.draw["standings"].text(
+            self.standings_draw.text(
                 (51 + pts_offset, y_offset - 1),
                 pts_str,
-                font=self.FONTS["sm"],
+                font=self.fonts["sm"],
                 fill=team_colour,
             )
 
@@ -234,11 +209,8 @@ class NHLStandingsScene(Scene):
         self.scroll_pause_until = time.time() + 0.5
         self.scroll_at_bottom = False
 
-    def handle_input(self, input_type: str) -> Optional[str]:
-        if input_type == "cancel":
-            return "menu"
-        elif input_type == "accept":
-            # Cycle through view types: Division -> Conference -> League -> Division
+    def handle_input(self, input_type: InputType):
+        if input_type == InputType.ACCEPT:
             if self.current_view_type == "Division":
                 self.current_view_type = "Conference"
             elif self.current_view_type == "Conference":
@@ -246,7 +218,7 @@ class NHLStandingsScene(Scene):
             else:
                 self.current_view_type = "Division"
             self._reset_scroll()
-        elif input_type == "right":
+        elif input_type == InputType.RIGHT:
             if self.current_view_type == "Division":
                 self.current_division_index = (self.current_division_index + 1) % len(
                     self.divisions
@@ -257,7 +229,7 @@ class NHLStandingsScene(Scene):
                     self.current_conference_index + 1
                 ) % len(self.conferences)
                 self._reset_scroll()
-        elif input_type == "left":
+        elif input_type == InputType.LEFT:
             if self.current_view_type == "Division":
                 self.current_division_index = (self.current_division_index - 1) % len(
                     self.divisions

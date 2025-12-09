@@ -5,9 +5,10 @@ from typing import Optional
 
 import requests
 
-from appkit.base import Application, Scene
+from appkit.base import Application, Scene, ApplicationConfig
 from appkit.config import Config
 from appkit.graphics_helpers import Color, Font, draw_text
+from tfeos.input import InputType, InputResult
 
 
 class WeatherData:
@@ -76,14 +77,16 @@ class WeatherData:
 
 
 class WeatherScene(Scene):
-    def __init__(self, config, app_dir: Path):
-        self.config = config
-        self.app_dir = app_dir
-        font_path = app_dir / "resources" / "7x13.bdf"
+    def __init__(self, application_config):
+        self.config = application_config.config
+        self.app_dir = application_config.app_dir
+
+        font_path = self.app_dir / "resources" / "7x13.bdf"
         self.font = Font(str(font_path))
         self.weather_data = WeatherData()
         self.update_thread = None
         self.running = True
+        self.initialized = False
 
         self.start_updates()
 
@@ -102,6 +105,7 @@ class WeatherScene(Scene):
             self.config.get("temperature_unit", "Fahrenheit") == "Fahrenheit"
         )
         self.weather_data.update_weather(location, use_fahrenheit)
+        self.initialized = True
 
     def _update_loop(self):
         self._do_update()
@@ -112,8 +116,11 @@ class WeatherScene(Scene):
     def render(self, canvas) -> None:
         canvas.Clear()
 
-        draw_text(canvas, self.font, 2, 16, Color(255, 255, 0), "Loading...")
+        if not self.initialized:
+            draw_text(canvas, self.font, 2, 16, Color(255, 255, 0), "Loading...")
+            return
         data = self.weather_data.get_weather()
+
         canvas.Clear()
 
         if data:
@@ -128,29 +135,23 @@ class WeatherScene(Scene):
         else:
             draw_text(canvas, self.font, 2, 16, Color(255, 255, 0), "No data")
 
-    def handle_input(self, input_type: str) -> Optional[str]:
-        if input_type == "cancel":
-            self.running = False
-            return "menu"
-        return None
-
-
 class App(Application):
-    def __init__(self, app_dir: Path):
-        super().__init__(app_dir)
-        self.scene = WeatherScene(self.config, self.app_dir)
+    def __init__(self, application_config: ApplicationConfig, matrix):
+        super().__init__(application_config, matrix)
+        self.scenes = {"weather": WeatherScene(self.application_config)}
+        self.scene = self.scenes["weather"]
 
-    def on_config_changed(self, new_config: Config) -> None:
-        self.scene.update_now(new_config)
+    def cleanup(self):
+        self.scene.running = False
 
     def get_framerate(self) -> int:
         return 10
 
-    def get_scenes(self):
-        return {"weather": WeatherScene(self.config, self.app_dir)}
+    def _render(self, canvas) -> None:
+        self.scene.render(canvas)
 
-    def default_scene(self) -> Scene:
-        return WeatherScene(self.config, self.app_dir)
+    def _handle_input(self, input_type: InputType) -> Optional[InputResult]:
+        return
 
-    def get_active_scene(self) -> Scene:
-        return self.scene
+    def handle_new_config(self, new_config: Config):
+        self.scene.update_now(new_config)

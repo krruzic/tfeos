@@ -5,9 +5,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from appkit.base import Application, Scene
+from appkit.base import Application, Scene, ApplicationConfig
 from appkit.config import Config
 from appkit.graphics_helpers import Color
+from tfeos.input import InputType, InputResult
 
 
 class RainbowParasolScene(Scene):
@@ -42,11 +43,6 @@ class RainbowParasolScene(Scene):
 
         self.angle = (self.angle + 5) % 360
 
-    def handle_input(self, input_type: str) -> Optional[str]:
-        if input_type == "cancel":
-            return "menu"
-        return None
-
 
 class MatrixRainScene(Scene):
     def __init__(self):
@@ -76,11 +72,6 @@ class MatrixRainScene(Scene):
                 drop["y"] = random.randint(-32, -5)
                 drop["speed"] = random.randint(1, 3)
                 drop["length"] = random.randint(5, 15)
-
-    def handle_input(self, input_type: str) -> Optional[str]:
-        if input_type == "cancel":
-            return "menu"
-        return None
 
 
 class StarfieldScene(Scene):
@@ -113,12 +104,6 @@ class StarfieldScene(Scene):
             if 0 <= screen_x < 64 and 0 <= screen_y < 32:
                 brightness = int(star["brightness"] * (1 - star["z"]))
                 canvas.SetPixel(screen_x, screen_y, brightness, brightness, brightness)
-
-    def handle_input(self, input_type: str) -> Optional[str]:
-        if input_type == "cancel":
-            return "menu"
-        return None
-
 
 class PlasmaScene(Scene):
     def __init__(self):
@@ -165,11 +150,6 @@ class PlasmaScene(Scene):
         if i == 4:
             return int(t * 255), int(p * 255), int(v * 255)
         return int(v * 255), int(p * 255), int(q * 255)
-
-    def handle_input(self, input_type: str) -> Optional[str]:
-        if input_type == "cancel":
-            return "menu"
-        return None
 
 
 class ConwayLifeScene(Scene):
@@ -229,12 +209,6 @@ class ConwayLifeScene(Scene):
                 count += self.grid[ny][nx]
         return count
 
-    def handle_input(self, input_type: str) -> Optional[str]:
-        if input_type == "cancel":
-            return "menu"
-        return None
-
-
 class ScreensaverManager(Scene):
     def __init__(self):
         self.scenes = [
@@ -249,28 +223,27 @@ class ScreensaverManager(Scene):
     def render(self, canvas) -> None:
         self.scenes[self.current_index].render(canvas)
 
-    def handle_input(self, input_type: str) -> Optional[str]:
-        if input_type == "cancel":
-            return "menu"
-        elif input_type == "right":
+    def handle_input(self, input_type: InputType) -> None:
+        if input_type == InputType.RIGHT:
             self.current_index = (self.current_index + 1) % len(self.scenes)
-        elif input_type == "left":
+        elif input_type == InputType.LEFT:
             self.current_index = (self.current_index - 1) % len(self.scenes)
         return None
 
 
 class App(Application):
-    def on_config_changed(self, new_config: Config):
-        return
+    def __init__(self, application_config: ApplicationConfig, matrix):
+        super().__init__(application_config, matrix)
+        self.screensaver = ScreensaverManager()
 
     def get_framerate(self) -> int:
         return 30
 
-    def default_scene(self) -> Scene:
-        return ScreensaverManager()
+    def _render(self, canvas) -> None:
+        self.screensaver.render(canvas)
 
-    def get_active_scene(self) -> Scene:
-        return ScreensaverManager()
+    def _handle_input(self, input_type: InputType) -> Optional[InputResult]:
+        self.screensaver.handle_input(input_type)
 
-    def get_scenes(self):
-        return {"screensaver": ScreensaverManager()}
+    def handle_new_config(self, new_config: Config):
+        return

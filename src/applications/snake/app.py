@@ -4,18 +4,19 @@ from collections import deque
 from pathlib import Path
 from typing import Optional
 
-from appkit.base import Application, Scene
+from appkit.base import Application, Scene, ApplicationConfig
 from appkit.config import Config
 from appkit.graphics_helpers import Color, Font, draw_text
+from tfeos.input import InputType, InputResult
 
 
 class SnakeScene(Scene):
-    def __init__(self, config, app_dir: Path):
-        super().__init__()
-        self.config = config
-        self.app_dir = app_dir
+    def __init__(self, application_config):
+        self.config = application_config.config
+        self.app_dir = application_config.app_dir
+
         self.reset_game()
-        font_path = app_dir / "resources" / "4x6.bdf"
+        font_path = self.app_dir / "resources" / "4x6.bdf"
         self.font = Font(str(font_path))
 
     def reset_game(self):
@@ -258,40 +259,42 @@ class SnakeScene(Scene):
             if 0 <= x + px < 64 and 0 <= y + py < 32:
                 canvas.SetPixel(x + px, y + py, 255, 255, 255)
 
-    def handle_input(self, input_type: str) -> Optional[str]:
-        if input_type == "cancel":
-            return "menu"
-
+    def handle_input(self, input_type: InputType):
         if self.game_over or self.won:
-            if input_type == "accept":
+            if input_type == InputType.ACCEPT:
                 self.reset_game()
             return None
 
         # Change direction (can't reverse)
-        if input_type == "up" and self.direction != (0, 1):
+        if input_type == InputType.UP and self.direction != (0, 1):
             self.next_direction = (0, -1)
-        elif input_type == "down" and self.direction != (0, -1):
+        elif input_type == InputType.DOWN and self.direction != (0, -1):
             self.next_direction = (0, 1)
-        elif input_type == "left" and self.direction != (1, 0):
+        elif input_type == InputType.LEFT and self.direction != (1, 0):
             self.next_direction = (-1, 0)
-        elif input_type == "right" and self.direction != (-1, 0):
+        elif input_type == InputType.RIGHT and self.direction != (-1, 0):
             self.next_direction = (1, 0)
 
         return None
 
 
 class App(Application):
+    def __init__(self, application_config: ApplicationConfig, matrix):
+        super().__init__(application_config, matrix)
+        self.scenes = {"snake": SnakeScene(self.application_config)}
+        self.scene = self.scenes["snake"]
+
     def get_framerate(self) -> int:
         return 30
 
-    def on_config_changed(self, new_config: Config) -> None:
+    def handle_new_config(self, new_config: Config) -> None:
         return
 
-    def get_scenes(self):
-        return {"snake": SnakeScene(self.config, self.app_dir)}
+    def _render(self, canvas) -> None:
+        self.scene.render(canvas)
 
-    def get_active_scene(self) -> Scene:
-        return SnakeScene(self.config, self.app_dir)
+    def _handle_input(self, input_type: InputType) -> Optional[InputResult]:
+        self.scene.handle_input(input_type)
 
-    def default_scene(self) -> Scene:
-        return SnakeScene(self.config, self.app_dir)
+    def handle_new_config(self, new_config: Config):
+        return

@@ -1,56 +1,55 @@
 from pathlib import Path
 from typing import Optional
 
-from appkit.base import Application, Scene
+from tfeos.input import InputType, InputResult
+from appkit.base import Application, Scene, ApplicationConfig
 from appkit.config import Config
 from applications.nhl.scenes.games import NHLGamesScene
-from applications.nhl.scenes.next_game import NHLNextGameScene
+from applications.nhl.scenes.favourite_team import NHLFavouriteTeamScene
 from applications.nhl.scenes.standings import NHLStandingsScene
 
 
 class App(Application):
-    def __init__(self, app_dir: Path):
-        super().__init__(app_dir)
-        self.scene = self.default_scene()
-        self.scene_order = ["games", "standings", "next_game"]
-        self.current_scene_index = 0
+    def __init__(self, application_config: ApplicationConfig, matrix):
+        super().__init__(application_config, matrix)
+        self.scenes = {
+            "standings": NHLStandingsScene(self.application_config),
+            "games": NHLGamesScene(self.application_config),
+            "favourite": NHLFavouriteTeamScene(self.application_config),
+        }
+        if self.application_config.config.get("default_scene") == "Standings":
+            self.scene = self.scenes["standings"]
+            self.current_scene_index = 0
+        if self.application_config.config.get("default_scene") == "Scores":
+            self.scene = self.scenes["games"]
+            self.current_scene_index = 1
+        else:
+            self.scene = self.scenes["favourite"]
+            self.current_scene_index = 2
+        self.scene_order = ["games", "standings", "favourite"]
 
     def get_framerate(self) -> int:
         return 10
 
-    def get_scenes(self):
-        return {
-            "games": NHLGamesScene(self.config, self.app_dir),
-            "standings": NHLStandingsScene(self.config, self.app_dir),
-            "next_game": NHLNextGameScene(self.config, self.app_dir),
-        }
-
-    def on_config_changed(self, new_config: Config) -> None:
+    def handle_new_config(self, new_config: Config) -> None:
         return
 
-    def get_framerate(self) -> int:
-        return 10
+    def _render(self, canvas) -> None:
+        self.scene.render(canvas)
 
-    def default_scene(self) -> Scene:
-        if self.config.get("default_scene") == "Standings":
-            return NHLStandingsScene(self.config, self.app_dir)
-        if self.config.get("default_scene") == "Scores":
-            return NHLGamesScene(self.config, self.app_dir)
-        else:
-            return NHLNextGameScene(self.config, self.app_dir)
-
-    def get_active_scene(self) -> Scene:
-        return self.scene
-
-    def handle_input(self, input_type: str) -> Optional[str]:
-        if input_type == "up":
+    def _handle_input(self, input_type: InputType) -> Optional[InputResult]:
+        if input_type == InputType.UP:
             self.current_scene_index = (self.current_scene_index - 1) % len(
                 self.scene_order
             )
-            return self.scene_order[self.current_scene_index]
-        elif input_type == "down":
+            self.scene = self.scenes.get(self.scene_order[self.current_scene_index])
+            return None
+        elif input_type == InputType.DOWN:
             self.current_scene_index = (self.current_scene_index + 1) % len(
                 self.scene_order
             )
-            return self.scene_order[self.current_scene_index]
-        return None
+            self.scene = self.scenes.get(self.scene_order[self.current_scene_index])
+            return None
+        self.scene.handle_input(input_type)
+
+

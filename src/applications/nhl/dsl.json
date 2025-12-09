@@ -1,44 +1,72 @@
 {
-    "settings": [
-        {
-            "name": "favourite_team",
-            "label": "Favourite Team",
-            "type": "dropdown",
-            "options": [
-                "ANA", "BOS", "BUF", "CAR", "CBJ", "CGY", "CHI", "COL", "DAL", "DET",
-                "EDM", "FLA", "LAK", "MIN", "MTL", "NJD", "NSH", "NYI", "NYR", "OTT",
-                "PHI", "PIT", "SEA", "SJS", "STL", "TBL", "TOR", "UTA", "VAN", "VGK",
-                "WPG", "WSH"
-            ],
-            "default": "MTL"
-        },
-        {
-            "name": "default_view",
-            "label": "Default Standings View",
-            "type": "radio",
-            "options": ["Conference", "League", "Division"],
-            "default": "Conference"
-        },
-        {
-            "name": "default_division",
-            "label": "Default Division",
-            "type": "radio",
-            "options": ["Atlantic", "Metropolitan", "Central", "Pacific"],
-            "default": "Atlantic"
-        },
-        {
-            "name": "default_conference",
-            "label": "Default Conference",
-            "type": "radio",
-            "options": ["Eastern", "Western"],
-            "default": "Eastern"
-        },
-        {
-            "name": "default_scene",
-            "label": "Default Scene",
-            "type": "radio",
-            "options": ["Next Game", "Standings", "Scores"],
-            "default": "Next Game"
-        }
-    ]
+  "settings": [
+    {
+      "name": "favourite_team",
+      "label": "Favourite Team",
+      "type": "dropdown",
+      "options": [
+        "ANA",
+        "BOS",
+        "BUF",
+        "CAR",
+        "CBJ",
+        "CGY",
+        "CHI",
+        "COL",
+        "DAL",
+        "DET",
+        "EDM",
+        "FLA",
+        "LAK",
+        "MIN",
+        "MTL",
+        "NJD",
+        "NSH",
+        "NYI",
+        "NYR",
+        "OTT",
+        "PHI",
+        "PIT",
+        "SEA",
+        "SJS",
+        "STL",
+        "TBL",
+        "TOR",
+        "UTA",
+        "VAN",
+        "VGK",
+        "WPG",
+        "WSH"
+      ],
+      "default": "MTL"
+    },
+    {
+      "name": "default_view",
+      "label": "Default Standings View",
+      "type": "radio",
+      "options": ["Conference", "League", "Division"],
+      "default": "Conference"
+    },
+    {
+      "name": "default_division",
+      "label": "Default Division",
+      "type": "radio",
+      "options": ["Atlantic", "Metropolitan", "Central", "Pacific"],
+      "default": "Atlantic"
+    },
+    {
+      "name": "default_conference",
+      "label": "Default Conference",
+      "type": "radio",
+      "options": ["Eastern", "Western"],
+      "default": "Eastern"
+    },
+    {
+      "name": "default_scene",
+      "label": "Default Scene",
+      "type": "radio",
+      "options": ["Favourite", "Standings", "Scores"],
+      "default": "Favourite"
+    }
+  ]
 }

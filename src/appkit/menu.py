@@ -3,6 +3,8 @@ import logging
 from io import BytesIO
 from typing import List, Optional
 
+from tfeos.input import InputType
+
 from .base import Scene
 from .graphics_helpers import Color
 
@@ -38,7 +40,7 @@ class AppMenuScene(Scene):
         return (pos // 3, pos % 3)
 
     def render(self, canvas) -> None:
-        canvas.Clear()
+        # canvas.Clear()
 
         start_idx = self.current_page * 6
         end_idx = min(start_idx + 6, len(self.apps))
@@ -123,10 +125,11 @@ class AppMenuScene(Scene):
                         color.b,
                     )
 
-    def handle_input(self, input_type: str) -> Optional[str]:
+    def handle_input(self, input_type: InputType) -> Optional[str]:
+        """Handle input to select app, returning app name if selected, or None otherwise"""
         row, col = self.position_on_page
 
-        if input_type == "down":
+        if input_type == InputType.DOWN:
             if row < 1:
                 new_index = self.selected_index + 3
                 if new_index < len(self.apps):
@@ -136,7 +139,7 @@ class AppMenuScene(Scene):
                 if new_page_start < len(self.apps):
                     self.selected_index = new_page_start
 
-        elif input_type == "up":
+        elif input_type == InputType.UP:
             if row > 0:
                 self.selected_index = max(0, self.selected_index - 3)
             else:
@@ -144,7 +147,7 @@ class AppMenuScene(Scene):
                     prev_page_start = (self.current_page - 1) * 6
                     self.selected_index = min(prev_page_start + 3, len(self.apps) - 1)
 
-        elif input_type == "right":
+        elif input_type == InputType.RIGHT:
             if col < 2:
                 new_index = self.selected_index + 1
                 page_end = min((self.current_page + 1) * 6, len(self.apps))
@@ -156,7 +159,7 @@ class AppMenuScene(Scene):
                 if target < len(self.apps):
                     self.selected_index = target
 
-        elif input_type == "left":
+        elif input_type == InputType.LEFT:
             if col > 0:
                 self.selected_index -= 1
             else:
@@ -165,7 +168,7 @@ class AppMenuScene(Scene):
                 target = min(page_start + (row * 3) + 2, page_end - 1)
                 self.selected_index = target
 
-        elif input_type == "accept":
+        elif input_type == InputType.ACCEPT:
             if self.selected_index < len(self.apps):
                 return self.apps[self.selected_index].name
 

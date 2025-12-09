@@ -9,6 +9,8 @@ from litestar.enums import RequestEncodingType
 from litestar.params import Body
 from litestar.response import Redirect, Template
 
+from appkit.base import ApplicationConfig
+from appkit.config import Config
 from appkit.manager import ApplicationManager
 from appkit.validation import ConfigValidator
 
@@ -17,7 +19,7 @@ logger = logging.getLogger("tfeos.routes")
 
 @get("/")
 async def app_list(request: Request) -> Template:
-    manager = request.app.state.app_manager
+    manager: ApplicationManager = request.app.state.app_manager
     applications = [
         {
             "name": app.metadata["name"],
@@ -35,36 +37,11 @@ async def app_list(request: Request) -> Template:
     )
 
 
-@get("/applications")
-async def list_applications(state: State) -> List[Dict[str, Any]]:
-    manager: ApplicationManager = state.app_manager
-    return [
-        {
-            "name": app.metadata["name"],
-            "version": app.metadata["version"],
-            "icon": app.metadata["icon"],
-            "description": app.metadata["description"],
-            "author": app.metadata["author"],
-        }
-        for app in manager.get_all_applications()
-    ]
-
-
-@get("/applications/{app_name:str}")
-async def get_application_details(app_name: str, state: State) -> Dict[str, Any]:
-    manager: ApplicationManager = state.app_manager
-    app = manager.get_application(app_name)
-    if not app:
-        return {"error": "Application not found"}
-
-    return {"metadata": app.metadata, "dsl": app.dsl, "config": app.config}
-
-
 @get("/applications/{app_name:str}/config")
 async def app_config_page(app_name: str, request: Request) -> Template:
     try:
-        manager = request.app.state.app_manager
-        app = manager.get_application(app_name)
+        manager: ApplicationManager = request.app.state.app_manager
+        app: Optional[ApplicationConfig] = manager.get_application(app_name)
 
         if not app:
             return Redirect(path="/")
@@ -100,7 +77,6 @@ async def update_config(app_name: str, request: Request) -> Redirect:
 
     form_data = await request.form()
 
-    logger.info(f"Received config: {form_data}")
     processed_data = {}
     for key, value in form_data.items():
         if key.endswith("[]"):
@@ -118,7 +94,7 @@ async def update_config(app_name: str, request: Request) -> Redirect:
                 processed_data[key] = value[-1]
             else:
                 processed_data[key] = value
-    logger.info(f"Processed config: {processed_data}")
+
     checkbox_fields = []
     if "settings" in app.dsl:
         checkbox_fields.extend(
@@ -149,14 +125,11 @@ async def update_config(app_name: str, request: Request) -> Redirect:
                     except ValueError:
                         pass
 
-    from appkit.validation import ConfigValidator
-
     valid, errors = ConfigValidator.validate(processed_data, app.dsl)
 
     if valid:
         os_instance = request.app.state.os_instance
-        manager.update_config(
-            app_name, processed_data, notify_callback=os_instance.on_app_config_changed
-        )
+        manager.update_config(app_name, processed_data)
+        os_instance.on_app_config_changed(app_name, Config(processed_data))
 
     return Redirect(path=f"/applications/{app_name}/config")

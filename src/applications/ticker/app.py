@@ -5,11 +5,14 @@ from typing import Optional
 
 import requests
 
-from appkit.base import Application, Scene
+from appkit.base import Application, Scene, ApplicationConfig
 from appkit.config import Config
 from appkit.graphics_helpers import Color, Font, draw_text
+from tfeos.input import InputType, InputResult
 
+import logging
 
+logger = logging.getLogger(__name__)
 class TickerData:
     def __init__(self):
         self.tickers = {}
@@ -41,7 +44,7 @@ class TickerData:
                 response = requests.get(url, headers=headers, timeout=5)
 
                 if response.status_code != 200:
-                    print(
+                    logger.error(
                         f"Yahoo Finance returned status {response.status_code} for {symbol}"
                     )
                     return
@@ -57,7 +60,11 @@ class TickerData:
                     meta = result["meta"]
                     price = meta["regularMarketPrice"]
                     prev_close = meta["chartPreviousClose"]
-                    change = ((price - prev_close) / prev_close) * 100
+                    if prev_close != 0:
+                        change = ((price - prev_close) / prev_close) * 100
+                    else:
+                        change = 0 # weekends
+                    
 
                     with self.lock:
                         self.tickers[symbol] = {
@@ -66,7 +73,7 @@ class TickerData:
                             "is_crypto": False,
                         }
         except Exception as e:
-            print(f"Error updating {symbol}: {e}")
+            logger.exception(f"Error updating {symbol}: {e}")
 
     def get_ticker(self, symbol: str):
         with self.lock:
@@ -74,10 +81,11 @@ class TickerData:
 
 
 class TickerScene(Scene):
-    def __init__(self, config, app_dir: Path):
-        self.config = config
-        self.app_dir = app_dir
-        font_path = app_dir / "resources" / "5x7.bdf"
+    def __init__(self, application_config):
+        self.config = application_config.config
+        self.app_dir = application_config.app_dir
+
+        font_path = self.app_dir / "resources" / "5x7.bdf"
         self.font = Font(str(font_path))
         self.ticker_data = TickerData()
         self.current_index = 0
@@ -152,11 +160,8 @@ class TickerScene(Scene):
         else:
             draw_text(canvas, self.font, 2, 16, Color(255, 255, 0), f"Loading...")
 
-    def handle_input(self, input_type: str) -> Optional[str]:
-        if input_type == "cancel":
-            self.running = False
-            return "menu"
-        elif input_type == "right":
+    def handle_input(self, input_type: InputType):
+        if input_type == InputType.RIGHT:
             symbols = self.config.get("symbols", [])
             crypto_symbols = self.config.get("crypto_symbols", [])
             all_symbols = [(s, False) for s in symbols] + [
@@ -164,7 +169,7 @@ class TickerScene(Scene):
             ]
             self.current_index = (self.current_index + 1) % len(all_symbols)
             self.last_switch = time.time()
-        elif input_type == "left":
+        elif input_type == InputType.LEFT:
             symbols = self.config.get("symbols", [])
             crypto_symbols = self.config.get("crypto_symbols", [])
             all_symbols = [(s, False) for s in symbols] + [
@@ -176,17 +181,22 @@ class TickerScene(Scene):
 
 
 class App(Application):
-    def on_config_changed(self, new_config: Config):
-        return
+    def __init__(self, application_config: ApplicationConfig, matrix):
+        super().__init__(application_config, matrix)
+        self.scenes = {"ticker": TickerScene(self.application_config)}
+        self.scene = self.scenes["ticker"]
+
+    def cleanup(self):
+        self.scene.running = False
 
     def get_framerate(self) -> int:
         return 10
 
-    def default_scene(self) -> Scene:
-        return TickerScene(self.config, self.app_dir)
+    def _render(self, canvas) -> None:
+        self.scene.render(canvas)
 
-    def get_active_scene(self) -> Scene:
-        return TickerScene(self.config, self.app_dir)
+    def _handle_input(self, input_type: InputType) -> Optional[InputResult]:
+        self.scene.handle_input(input_type)
 
-    def get_scenes(self):
-        return {"ticker": TickerScene(self.config, self.app_dir)}
+    def handle_new_config(self, new_config: Config):
+        return
