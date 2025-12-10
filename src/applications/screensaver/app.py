@@ -5,10 +5,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from appkit.base import Application, Scene, ApplicationConfig
+from appkit.base import Application, ApplicationConfig, Scene
 from appkit.config import Config
 from appkit.graphics_helpers import Color
-from tfeos.input import InputType, InputResult
+from tfeos.input import InputResult, InputType
 
 
 class RainbowParasolScene(Scene):
@@ -27,18 +27,32 @@ class RainbowParasolScene(Scene):
                 pixel_angle = math.degrees(math.atan2(dy, dx)) + 180
                 pixel_angle = (pixel_angle + self.angle) % 360
 
-                section = int(pixel_angle / 60) % 6
+                # Smooth gradient using HSV
+                hue = pixel_angle / 360.0
 
-                colors = [
-                    (255, 0, 0),
-                    (255, 127, 0),
-                    (255, 255, 0),
-                    (0, 255, 0),
-                    (0, 0, 255),
-                    (148, 0, 211),
-                ]
+                # Convert HSV to RGB (S=1, V=1 for full saturation/brightness)
+                h = hue * 6.0
+                c = 1.0
+                x_val = 1.0 - abs((h % 2) - 1.0)
 
-                r, g, b = colors[section]
+                if h < 1:
+                    r, g, b = c, x_val, 0
+                elif h < 2:
+                    r, g, b = x_val, c, 0
+                elif h < 3:
+                    r, g, b = 0, c, x_val
+                elif h < 4:
+                    r, g, b = 0, x_val, c
+                elif h < 5:
+                    r, g, b = x_val, 0, c
+                else:
+                    r, g, b = c, 0, x_val
+
+                # Scale to 0-255 and snap to 6-bit
+                r = int(r * 252) & 0xFC
+                g = int(g * 252) & 0xFC
+                b = int(b * 252) & 0xFC
+
                 canvas.SetPixel(x, y, r, g, b)
 
         self.angle = (self.angle + 5) % 360
@@ -104,6 +118,7 @@ class StarfieldScene(Scene):
             if 0 <= screen_x < 64 and 0 <= screen_y < 32:
                 brightness = int(star["brightness"] * (1 - star["z"]))
                 canvas.SetPixel(screen_x, screen_y, brightness, brightness, brightness)
+
 
 class PlasmaScene(Scene):
     def __init__(self):
@@ -208,6 +223,7 @@ class ConwayLifeScene(Scene):
                 ny = (y + dy) % 32
                 count += self.grid[ny][nx]
         return count
+
 
 class ScreensaverManager(Scene):
     def __init__(self):

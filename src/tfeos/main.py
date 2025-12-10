@@ -7,7 +7,7 @@ import termios
 import time
 import tty
 from pathlib import Path
-from threading import Lock, Thread
+from threading import Thread
 from typing import Optional, final
 
 import uvicorn
@@ -75,6 +75,9 @@ class LEDMatrixOS:
         except ImportError:
             try:
                 from RGBMatrixEmulator import RGBMatrix, RGBMatrixOptions
+
+                library_logger = logging.getLogger("RGBME")  # supress duplicate logging
+                library_logger.handlers.clear()
 
                 options = RGBMatrixOptions()
                 options.rows = 32
@@ -206,6 +209,7 @@ class LEDMatrixOS:
             self.core_loop()
         except KeyboardInterrupt:
             signal_handler(signal.SIGINT, None)
+
 
 def main():
     parser = argparse.ArgumentParser(description="Twenty Forty Eight OS")

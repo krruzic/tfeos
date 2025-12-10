@@ -7,9 +7,9 @@ from typing import Optional
 
 from PIL import Image, ImageDraw, ImageFont
 
-from tfeos.input import InputType, InputResult
 from appkit.base import Scene
-from appkit.graphics_helpers import crop_image, MatrixCanvas, Region
+from appkit.graphics_helpers import Font, MatrixCanvas, Region, crop_image
+from tfeos.input import InputResult, InputType
 
 from .nhl_api import get_next_game, get_standings
 
@@ -27,6 +27,7 @@ class NHLFavouriteTeamScene(Scene):
 
         font_path = self.app_dir / "resources" / "fonts"
         self.fonts = {
+            "xsm": ImageFont.load(str(font_path / "4x6.pil")),
             "sm": ImageFont.load(str(font_path / "Tamzen5x9r.pil")),
             "sm_bold": ImageFont.load(str(font_path / "Tamzen5x9b.pil")),
             "med": ImageFont.load(str(font_path / "Tamzen6x12r.pil")),
@@ -105,7 +106,12 @@ class NHLFavouriteTeamScene(Scene):
             day = game["start_datetime_local"].strftime("%-d")
             month_col = 37 if len(day) == 1 else 35
             self.matrix_canvas.draw_text(
-                Region.FULL, month_col, 12, month, self.colours["white"], self.fonts["sm"]
+                Region.FULL,
+                month_col,
+                12,
+                month,
+                self.colours["white"],
+                self.fonts["sm"],
             )
             day_col = 53 if len(day) == 1 else 51
             self.matrix_canvas.draw_text(
@@ -117,14 +123,24 @@ class NHLFavouriteTeamScene(Scene):
                 Region.FULL, [34, 38], 23, "VS", self.colours["white"], self.fonts["sm"]
             )
             self.matrix_canvas.draw_text(
-                Region.FULL, 44, 21, game["opponent_abrv"], self.colours["white"], self.fonts["med_bold"]
+                Region.FULL,
+                44,
+                21,
+                game["opponent_abrv"],
+                self.colours["white"],
+                self.fonts["med_bold"],
             )
         else:
             self.matrix_canvas.draw_text(
                 Region.FULL, 35, 21, "@", self.colours["white"], self.fonts["med"]
             )
             self.matrix_canvas.draw_text(
-                Region.FULL, 43, 21, game["opponent_abrv"], self.colours["white"], self.fonts["med_bold"]
+                Region.FULL,
+                43,
+                21,
+                game["opponent_abrv"],
+                self.colours["white"],
+                self.fonts["med_bold"],
             )
 
     def _build_stats_image(self):
@@ -133,21 +149,30 @@ class NHLFavouriteTeamScene(Scene):
         self._add_team_logo(fav_team)
 
         self.matrix_canvas.draw_text(
-            Region.FULL, 34, 0, "Stats", self.colours["white"], self.fonts["med_bold"]
+            Region.FULL, 33, 0, "Stats", self.colours["white"], self.fonts["med_bold"]
         )
         self.matrix_canvas.draw_line(
             Region.FULL, (34, 10), (60, 10), self.colours["white"]
         )
 
         if self.team_stats:
+            # self.matrix_canvas.draw_text(
+            #     Region.FULL,
+            #     34,
+            #     14,
+            #     f"{self.team_stats['wins']}-{self.team_stats['losses']}-{self.team_stats['ot_losses']}",
+            #     self.colours["white"],
+            #     self.fonts["xsm"],
+            # )
             self.matrix_canvas.draw_text(
                 Region.FULL,
                 34,
                 12,
-                f"{self.team_stats['wins']}-{self.team_stats['losses']}-{self.team_stats['ot_losses']}",
+                f"Pt:{self.team_stats['points']}",
                 self.colours["white"],
                 self.fonts["sm"],
             )
+
             self.matrix_canvas.draw_text(
                 Region.FULL,
                 34,
@@ -160,11 +185,25 @@ class NHLFavouriteTeamScene(Scene):
     def _draw_time(self, time_str, y_offset):
         if time_str[0] == "1":
             self.matrix_canvas.draw_time_display(
-                Region.FULL, 36, y_offset, time_str, self.colours["white"], self.fonts["med"], 12, 4
+                Region.FULL,
+                36,
+                y_offset,
+                time_str,
+                self.colours["white"],
+                self.fonts["med"],
+                12,
+                4,
             )
         else:
             self.matrix_canvas.draw_time_display(
-                Region.FULL, 36, y_offset, time_str, self.colours["white"], self.fonts["med"], 8, 4
+                Region.FULL,
+                36,
+                y_offset,
+                time_str,
+                self.colours["white"],
+                self.fonts["med"],
+                8,
+                4,
             )
 
     def _add_team_logo(self, team: str):

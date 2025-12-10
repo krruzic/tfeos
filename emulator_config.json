@@ -1,9 +1,9 @@
 {
-    "pixel_outline": 0,
+    "pixel_outline": 1,
     "pixel_size": 16,
     "pixel_style": "circle",
     "pixel_glow": 6,
-    "display_adapter": "tkinter",
+    "display_adapter": "browser",
     "icon_path": null,
     "emulator_title": null,
     "suppress_font_warnings": false,

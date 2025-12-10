@@ -6,11 +6,12 @@ from typing import Optional
 
 from PIL import Image, ImageDraw, ImageFont
 
-from tfeos.input import InputType, InputResult
 from appkit.base import Scene
 from appkit.graphics_helpers import MatrixCanvas, Region, crop_image
+from tfeos.input import InputResult, InputType
 
 from .nhl_api import get_games
+
 
 class NHLGamesScene(Scene):
     def __init__(self, application_config):
@@ -102,8 +103,12 @@ class NHLGamesScene(Scene):
         )
 
         self.matrix_canvas.draw_multichar_text(
-            Region.CENTRE, [4, 8, 12, 16], 1, "oday",
-            self.colours["white"], self.fonts["sm"]
+            Region.CENTRE,
+            [4, 8, 12, 16],
+            1,
+            "oday",
+            self.colours["white"],
+            self.fonts["sm"],
         )
 
         self.matrix_canvas.draw_text(
@@ -125,12 +130,20 @@ class NHLGamesScene(Scene):
         self._add_team_logos_to_image(game)
 
         self.matrix_canvas.draw_multichar_text(
-            Region.CENTRE, [0, 4, 8, 13, 16], -1, "Final",
-            self.colours["white"], self.fonts["med"]
+            Region.CENTRE,
+            [0, 4, 8, 13, 16],
+            -1,
+            "Final",
+            self.colours["white"],
+            self.fonts["med"],
         )
         self.matrix_canvas.draw_multichar_text(
-            Region.CENTRE, [4, 8, 13, 16], 1, "inal",
-            self.colours["white"], self.fonts["sm"]
+            Region.CENTRE,
+            [4, 8, 13, 16],
+            1,
+            "inal",
+            self.colours["white"],
+            self.fonts["sm"],
         )
 
         self._add_score_to_image(game)
@@ -146,7 +159,9 @@ class NHLGamesScene(Scene):
         )
         if away_logo_path.exists():
             if away_logo_path not in self.image_cache:
-                self.image_cache[away_logo_path] = Image.open(away_logo_path).convert("RGB")
+                self.image_cache[away_logo_path] = Image.open(away_logo_path).convert(
+                    "RGB"
+                )
             away_logo = self.image_cache[away_logo_path].copy()
             away_logo = crop_image(away_logo)
             away_logo.thumbnail((30, 30))
@@ -165,7 +180,9 @@ class NHLGamesScene(Scene):
         )
         if home_logo_path.exists():
             if home_logo_path not in self.image_cache:
-                self.image_cache[home_logo_path] = Image.open(home_logo_path).convert("RGB")
+                self.image_cache[home_logo_path] = Image.open(home_logo_path).convert(
+                    "RGB"
+                )
             home_logo = self.image_cache[home_logo_path].copy()
             home_logo = crop_image(home_logo)
             home_logo.thumbnail((30, 30))
@@ -178,8 +195,14 @@ class NHLGamesScene(Scene):
         home_score = str(game["home_score"] or 0)
 
         self.matrix_canvas.draw_score_pair(
-            Region.CENTRE, 0, 16, away_score, home_score,
-            self.colours["white"], self.fonts["lrg_bold"], self.fonts["sm_bold"]
+            Region.CENTRE,
+            0,
+            16,
+            away_score,
+            home_score,
+            self.colours["white"],
+            self.fonts["lrg_bold"],
+            self.fonts["sm_bold"],
         )
 
     def _add_playing_period_to_image(self, game):
@@ -206,34 +229,48 @@ class NHLGamesScene(Scene):
         elif period_type == "OT":
             ot_num = str(period_num - 3)
             self.matrix_canvas.draw_text(
-                Region.CENTRE, 1, -1, f"{ot_num}OT", self.colours["white"], self.fonts["med"]
+                Region.CENTRE,
+                1,
+                -1,
+                f"{ot_num}OT",
+                self.colours["white"],
+                self.fonts["med"],
             )
         elif period_num == 1:
             self.matrix_canvas.draw_multichar_text(
-                Region.CENTRE, [4, 8, 12], -1, "1st",
-                self.colours["white"], self.fonts["med"]
+                Region.CENTRE, [4], -1, "1", self.colours["white"], self.fonts["med"]
             )
             self.matrix_canvas.draw_multichar_text(
-                Region.CENTRE, [8, 12], -1, "st",
-                self.colours["white"], self.fonts["sm"]
+                Region.CENTRE,
+                [8, 12],
+                -1,
+                "st",
+                self.colours["white"],
+                self.fonts["sm"],
             )
         elif period_num == 2:
             self.matrix_canvas.draw_multichar_text(
-                Region.CENTRE, [3, 9, 13], -1, "2nd",
-                self.colours["white"], self.fonts["med"]
+                Region.CENTRE, [3], -1, "2", self.colours["white"], self.fonts["med"]
             )
             self.matrix_canvas.draw_multichar_text(
-                Region.CENTRE, [9, 13], -1, "nd",
-                self.colours["white"], self.fonts["sm"]
+                Region.CENTRE,
+                [9, 13],
+                -1,
+                "nd",
+                self.colours["white"],
+                self.fonts["sm"],
             )
         elif period_num == 3:
             self.matrix_canvas.draw_multichar_text(
-                Region.CENTRE, [3, 9, 13], -1, "3rd",
-                self.colours["white"], self.fonts["med"]
+                Region.CENTRE, [3], -1, "3", self.colours["white"], self.fonts["med"]
             )
             self.matrix_canvas.draw_multichar_text(
-                Region.CENTRE, [9, 13], -1, "rd",
-                self.colours["white"], self.fonts["sm"]
+                Region.CENTRE,
+                [9, 13],
+                -1,
+                "rd",
+                self.colours["white"],
+                self.fonts["sm"],
             )
 
     def _add_time_to_image(self, game):
@@ -245,7 +282,12 @@ class NHLGamesScene(Scene):
             row_offset = 13
 
         self.matrix_canvas.draw_time_display(
-            Region.CENTRE, 0, 8 + row_offset, time_str, self.colours["white"], self.fonts["sm"]
+            Region.CENTRE,
+            0,
+            8 + row_offset,
+            time_str,
+            self.colours["white"],
+            self.fonts["sm"],
         )
 
     def handle_input(self, input_type: InputType):
